@@ -6,10 +6,17 @@ import {
     registrarEntrada, registrarSaida
 } from "./data.js";
 import { formatDateBR, formatMoneyBR, daysUntil, downloadCsv, escapeHtml, toDateInputValue } from "./utils.js";
+import { can } from "./permissions.js";
 
 const user = await requireAuth();
 if (user) {
     renderShell("produtos.html", user);
+
+    const podeEditar = can(user, "produtos_edit");
+    const podeEntrada = can(user, "entrada");
+    const podeSaida = can(user, "saida");
+
+    document.getElementById("btnNovoProduto").classList.toggle("d-none", !podeEditar);
 
     let produtosCache = [];
     let filtroAtual = "todos";
@@ -30,8 +37,8 @@ if (user) {
         await carregarProdutos();
 
         const acao = params.get("acao");
-        if (acao === "entrada") new bootstrap.Modal(document.getElementById("modalEntrada")).show();
-        if (acao === "saida") new bootstrap.Modal(document.getElementById("modalSaida")).show();
+        if (acao === "entrada" && podeEntrada) new bootstrap.Modal(document.getElementById("modalEntrada")).show();
+        if (acao === "saida" && podeSaida) new bootstrap.Modal(document.getElementById("modalSaida")).show();
 
         document.getElementById("btnNovoProduto").addEventListener("click", abrirModalNovoProduto);
         document.getElementById("formProduto").addEventListener("submit", salvarProduto);
@@ -42,6 +49,9 @@ if (user) {
         document.getElementById("modalEntrada").addEventListener("show.bs.modal", preencherSelects);
         document.getElementById("modalSaida").addEventListener("show.bs.modal", preencherSelects);
     }
+
+    await init();
+
 
     async function carregarProdutos() {
         produtosCache = await listProdutos();
@@ -90,8 +100,9 @@ if (user) {
       <td>${formatDateBR(p.validade)}</td>
       <td>${statusBadge}</td>
       <td>
+        ${podeEditar ? `
         <button class="btn btn-sm btn-primary btn-editar" data-id="${p.id}"><i class="bi bi-pencil"></i></button>
-        <button class="btn btn-sm btn-danger btn-deletar" data-id="${p.id}"><i class="bi bi-trash"></i></button>
+        <button class="btn btn-sm btn-danger btn-deletar" data-id="${p.id}"><i class="bi bi-trash"></i></button>` : "-"}
       </td>
     </tr>`;
         }).join("") || `<tr><td colspan="7" class="text-center text-muted py-4">Nenhum produto encontrado.</td></tr>`;

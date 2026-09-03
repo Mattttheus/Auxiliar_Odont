@@ -20,7 +20,7 @@ form.addEventListener("submit", async (e) => {
 
     try {
         const totalUsuarios = await countUsuarios();
-        const role = totalUsuarios === 0 ? "admin" : "user";
+        const role = totalUsuarios === 0 ? "admin" : "vendedor";
 
         // Guarda nome/perfil nos metadados do Auth: se "Confirm email" estiver ativo,
         // o perfil na tabela usuarios só pode ser criado depois (sem sessão agora, o insert

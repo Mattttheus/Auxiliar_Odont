@@ -37,7 +37,7 @@ form.addEventListener("submit", async (e) => {
         if (!perfil) {
             const meta = data.user.user_metadata || {};
             const totalUsuarios = await countUsuarios();
-            const role = meta.role || (totalUsuarios === 0 ? "admin" : "user");
+            const role = meta.role || (totalUsuarios === 0 ? "admin" : "vendedor");
             await createUsuarioProfile(data.user.id, {
                 nome: meta.nome || email.split("@")[0],
                 email,

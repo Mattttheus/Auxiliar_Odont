@@ -1,30 +1,33 @@
 // Sidebar, tema, comando de voz e beep sonoro (substitui includes/header.php e footer.php).
 import { logout } from "./auth.js";
+import { can, roleLabel, roleBadgeClass } from "./permissions.js";
 
 const MENU_ITEMS = [
-    { href: "dashboard.html", icon: "bi-house-door", label: "Dashboard" },
-    { href: "produtos.html", icon: "bi-box", label: "Produtos" },
-    { href: "usuarios.html", icon: "bi-people", label: "Usuários" },
-    { href: "historico.html", icon: "bi-clock-history", label: "Histórico" },
-    { href: "produtos.html?acao=entrada", icon: "bi-box-arrow-in-down", label: "Entrada" },
-    { href: "produtos.html?acao=saida", icon: "bi-box-arrow-up", label: "Saída" }
+    { href: "dashboard.html", icon: "bi-house-door", label: "Dashboard", perm: null },
+    { href: "produtos.html", icon: "bi-box", label: "Produtos", perm: "produtos_view" },
+    { href: "usuarios.html", icon: "bi-people", label: "Usuários", perm: "usuarios" },
+    { href: "historico.html", icon: "bi-clock-history", label: "Histórico", perm: "historico" },
+    { href: "produtos.html?acao=entrada", icon: "bi-box-arrow-in-down", label: "Entrada", perm: "entrada" },
+    { href: "produtos.html?acao=saida", icon: "bi-box-arrow-up", label: "Saída", perm: "saida" }
 ];
 
 export function renderShell(activePage, user) {
     const shell = document.getElementById("app-shell");
     if (!shell) return;
 
-    const links = MENU_ITEMS.map(item => {
-        const isActive = item.href.startsWith(activePage) ? " active" : "";
-        return `<a href="${item.href}" class="${isActive}"><i class="bi ${item.icon}"></i> ${item.label}</a>`;
-    }).join("");
+    const links = MENU_ITEMS
+        .filter(item => !item.perm || can(user, item.perm))
+        .map(item => {
+            const isActive = item.href.startsWith(activePage) ? " active" : "";
+            return `<a href="${item.href}" class="${isActive}"><i class="bi ${item.icon}"></i> ${item.label}</a>`;
+        }).join("");
 
     const saudacao = user ? `
       <div class="sidebar-user">
         <div class="sidebar-user-avatar"><i class="bi bi-person-fill"></i></div>
         <div>
           <div class="sidebar-user-name">Olá, ${user.nome}</div>
-          <span class="badge ${user.role === 'admin' ? 'bg-danger' : 'bg-primary'}">${user.role === 'admin' ? 'ADMIN' : 'USUÁRIO'}</span>
+          <span class="badge ${roleBadgeClass(user.role)}">${roleLabel(user.role)}</span>
         </div>
       </div>` : "";
 

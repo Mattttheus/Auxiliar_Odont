@@ -6,6 +6,7 @@ import { formatDateBR, escapeHtml } from "./utils.js";
 import { supabase } from "./supabase-init.js";
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./supabase-config.js";
+import { roleLabel, roleBadgeClass } from "./permissions.js";
 
 const user = await requireAdmin();
 if (user) {
@@ -28,13 +29,13 @@ function renderTabela() {
     <tr>
       <td>${escapeHtml(u.nome)}</td>
       <td>${escapeHtml(u.email)}</td>
-      <td>${u.role === "admin" ? '<span class="badge bg-danger">ADMIN</span>' : '<span class="badge bg-primary">USER</span>'}</td>
+      <td><span class="badge ${roleBadgeClass(u.role)}">${roleLabel(u.role)}</span></td>
       <td>${u.ativo === false ? '<span class="badge bg-secondary">Inativo</span>' : '<span class="badge bg-success">Ativo</span>'}</td>
       <td>${formatDateBR(u.criadoEm)}</td>
       <td>
-        <button class="btn btn-sm btn-primary btn-editar" data-id="${u.id}"><i class="bi bi-pencil"></i></button>
+        <button class="btn btn-sm btn-primary btn-editar" data-id="${u.id}" title="Editar"><i class="bi bi-pencil"></i></button>
         <button class="btn btn-sm btn-outline-secondary btn-reset" data-email="${u.email}" title="Enviar redefinição de senha"><i class="bi bi-key"></i></button>
-        <button class="btn btn-sm btn-danger btn-excluir" data-id="${u.id}" ${u.id === getCurrentUser()?.uid ? "disabled" : ""}><i class="bi bi-trash"></i></button>
+        <button class="btn btn-sm btn-danger btn-excluir" data-id="${u.id}" title="Excluir" ${u.id === getCurrentUser()?.uid ? "disabled" : ""}><i class="bi bi-trash"></i></button>
       </td>
     </tr>`).join("") || `<tr><td colspan="6" class="text-center text-muted py-4">Nenhum usuário cadastrado.</td></tr>`;
 
@@ -49,7 +50,6 @@ function abrirModalNovoUsuario() {
     document.getElementById("usuarioId").value = "";
     document.getElementById("senhaGroup").style.display = "block";
     document.getElementById("usuarioSenha").required = true;
-    document.getElementById("senhaHelp").textContent = "";
     new bootstrap.Modal(document.getElementById("modalUsuario")).show();
 }
 
@@ -60,7 +60,7 @@ function abrirModalEditar(id) {
     document.getElementById("usuarioId").value = u.id;
     document.getElementById("usuarioNome").value = u.nome || "";
     document.getElementById("usuarioEmail").value = u.email || "";
-    document.getElementById("usuarioRole").value = u.role || "user";
+    document.getElementById("usuarioRole").value = u.role || "vendedor";
     document.getElementById("usuarioAtivo").checked = u.ativo !== false;
     document.getElementById("senhaGroup").style.display = "none";
     document.getElementById("usuarioSenha").required = false;
@@ -75,15 +75,18 @@ async function salvarUsuario(e) {
     const role = document.getElementById("usuarioRole").value;
     const ativo = document.getElementById("usuarioAtivo").checked;
 
-    if (id) {
-        await updateUsuario(id, { nome, email, role, ativo });
-    } else {
-        const senha = document.getElementById("usuarioSenha").value;
-        await criarUsuarioSemDeslogarAdmin(nome, email, senha, role, ativo);
+    try {
+        if (id) {
+            await updateUsuario(id, { nome, email, role, ativo });
+        } else {
+            const senha = document.getElementById("usuarioSenha").value;
+            await criarUsuarioSemDeslogarAdmin(nome, email, senha, role, ativo);
+        }
+        bootstrap.Modal.getInstance(document.getElementById("modalUsuario")).hide();
+        await carregarUsuarios();
+    } catch (err) {
+        alert("Erro ao salvar usuário: " + err.message);
     }
-
-    bootstrap.Modal.getInstance(document.getElementById("modalUsuario")).hide();
-    await carregarUsuarios();
 }
 
 /**
@@ -98,21 +101,24 @@ async function criarUsuarioSemDeslogarAdmin(nome, email, senha, role, ativo) {
     if (error) throw error;
     if (!data.user) throw new Error("Não foi possível criar o usuário (verifique a confirmação de email nas configurações do Supabase Auth).");
     await createUsuarioProfile(data.user.id, { nome, email, role, ativo });
+}
 
-    async function excluirUsuario(id) {
-        const u = usuariosCache.find(x => x.id === id);
-        if (!confirm(`Excluir o perfil de "${u?.nome}"? (a conta de autenticação deve ser removida no console do Supabase)`)) return;
-        await deleteUsuarioProfile(id);
-        await carregarUsuarios();
-    }
+async function excluirUsuario(id) {
+    const u = usuariosCache.find(x => x.id === id);
+    if (!confirm(`Excluir o perfil de "${u?.nome}"? (a conta de autenticação deve ser removida no console do Supabase)`)) return;
+    await deleteUsuarioProfile(id);
+    await carregarUsuarios();
+}
 
-    async function resetarSenha(email) {
-        try {
-            const { error } = await supabase.auth.resetPasswordForEmail(email, {
-                redirectTo: window.location.origin + window.location.pathname.replace("usuarios.html", "index.html")
-            });
-            if (error) throw error;
-        } catch (err) {
-            alert("Erro ao enviar email: " + err.message);
-        }
+async function resetarSenha(email) {
+    try {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: window.location.origin + window.location.pathname.replace("usuarios.html", "index.html")
+        });
+        if (error) throw error;
+        alert("Email de redefinição de senha enviado para " + email);
+    } catch (err) {
+        alert("Erro ao enviar email: " + err.message);
     }
+}
+

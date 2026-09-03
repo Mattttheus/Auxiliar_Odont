@@ -3,7 +3,7 @@ create table if not exists usuarios (
   id uuid primary key references auth.users(id) on delete cascade,
   nome text not null,
   email text not null,
-  role text not null default 'user' check (role in ('admin','user')),
+  role text not null default 'vendedor' check (role in ('admin','estoquista','vendedor','dentista')),
   ativo boolean not null default true,
   criado_em timestamptz not null default now()
 );

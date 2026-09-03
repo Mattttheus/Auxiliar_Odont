@@ -36,7 +36,7 @@
                             <th>Perfil</th>
                             <th>Status</th>
                             <th>Criado em</th>
-                            <th width="200">Ações</th>
+                            <th>Ações</th>
                         </tr>
                     </thead>
                     <tbody id="usuariosTableBody"></tbody>
@@ -59,18 +59,21 @@
                     </div>
                     <div class="modal-body">
                         <input type="hidden" id="usuarioId">
-                        <div class="mb-3"><label class="form-label">Nome</label><input class="form-control"
-                                id="usuarioNome" required></div>
-                        <div class="mb-3"><label class="form-label">E-mail</label><input type="email"
+                        <div class="mb-3"><label class="form-label" for="usuarioNome">Nome</label><input
+                                class="form-control" id="usuarioNome" required></div>
+                        <div class="mb-3"><label class="form-label" for="usuarioEmail">E-mail</label><input type="email"
                                 class="form-control" id="usuarioEmail" required></div>
-                        <div class="mb-3" id="senhaGroup"><label class="form-label">Senha</label><input type="password"
-                                class="form-control" id="usuarioSenha" minlength="6"><small class="text-muted"
-                                id="senhaHelp"></small></div>
+                        <div class="mb-3" id="senhaGroup"><label class="form-label"
+                                for="usuarioSenha">Senha</label><input type="password" class="form-control"
+                                id="usuarioSenha" minlength="6"><small class="text-muted" id="senhaHelp"></small></div>
                         <div class="mb-3">
-                            <label class="form-label">Perfil</label>
+                            <label class="form-label" for="usuarioRole">Nível de acesso</label>
                             <select class="form-select" id="usuarioRole">
-                                <option value="user">Usuário</option>
-                                <option value="admin">Administrador</option>
+                                <option value="vendedor">Vendedor — registra saídas, visualiza produtos</option>
+                                <option value="estoquista">Estoquista — gerencia produtos, entradas e saídas</option>
+                                <option value="dentista">Dentista (Dr./Dra.) — visualiza dashboard, produtos e histórico
+                                </option>
+                                <option value="admin">Administrador — acesso total ao sistema</option>
                             </select>
                         </div>
                         <div class="form-check form-switch">
