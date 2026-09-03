@@ -54,31 +54,36 @@ export async function abrirScanner(onResult) {
     const modal = new bootstrap.Modal(modalEl);
 
     modalEl.addEventListener("hidden.bs.modal", pararScanner, { once: true });
-    modal.show();
 
     try {
         await carregarHtml5Qrcode();
     } catch (err) {
-        modal.hide();
         alert(err.message);
         return;
     }
 
-    scannerInstance = new window.Html5Qrcode("scannerReader");
-    try {
-        await scannerInstance.start(
-            { facingMode: "environment" },
-            { fps: 10, qrbox: { width: 250, height: 150 } },
-            async (decodedText) => {
-                await pararScanner();
-                modal.hide();
-                onResult(decodedText);
-            },
-            () => { /* frame sem leitura, ignora */ }
-        );
-    } catch (err) {
-        modal.hide();
-        alert("Não foi possível acessar a câmera: " + err.message);
-    }
+    // Só inicia a câmera depois que o modal terminou a animação de abertura,
+    // senão o contêiner ainda tem tamanho zero e a biblioteca falha silenciosamente.
+    modalEl.addEventListener("shown.bs.modal", async () => {
+        scannerInstance = new window.Html5Qrcode("scannerReader");
+        try {
+            await scannerInstance.start(
+                { facingMode: "environment" },
+                { fps: 10, qrbox: { width: 250, height: 150 } },
+                async (decodedText) => {
+                    await pararScanner();
+                    modal.hide();
+                    onResult(decodedText);
+                },
+                () => { /* frame sem leitura, ignora */ }
+            );
+        } catch (err) {
+            modal.hide();
+            alert("Não foi possível acessar a câmera: " + err.message);
+        }
+    }, { once: true });
+
+    modal.show();
 }
+
 
