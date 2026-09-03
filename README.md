@@ -1,12 +1,56 @@
 ﻿# Auxiliar Odont — Sistema de Controle de Estoque
 
-Projeto: Auxiliar Odont — sistema de controle de estoque desenvolvido em PHP e MySQL.
-Inclui CRUD de produtos e usuários, dashboard com Chart.js, exportação CSV e histórico de saídas.
+Aplicação 100% estática (HTML + CSS + JavaScript) hospedada no **GitHub Pages**, usando
+**Firebase (Authentication + Firestore)** como backend de dados — já que o GitHub Pages
+não executa PHP nem hospeda MySQL. A versão original em PHP/MySQL foi preservada em
+[legacy-php/](legacy-php/) apenas como referência histórica.
 
-Usuário padrão (teste):
-- admin@local.com / 123456
+## Como publicar no GitHub Pages
 
-Importe database/estoque_db.sql no phpMyAdmin para criar o banco.
+1. **Crie um projeto no Firebase** (gratuito): <https://console.firebase.google.com>
+   - Ative **Authentication → Sign-in method → Email/senha**.
+   - Ative **Firestore Database** (modo produção).
+2. Copie as credenciais em *Configurações do projeto → Seus apps → Web (`</>`)* e cole em
+   [assets/js/firebase-config.js](assets/js/firebase-config.js).
+3. No Firestore, configure as regras de segurança (Regras → cole o conteúdo abaixo):
+
+   ```
+   rules_version = '2';
+   service cloud.firestore {
+     match /databases/{database}/documents {
+       function logado() { return request.auth != null; }
+       function souAdmin() {
+         return exists(/databases/$(database)/documents/usuarios/$(request.auth.uid)) &&
+           get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.role == 'admin';
+       }
+       match /usuarios/{uid} {
+         allow read: if logado();
+         allow create: if request.auth.uid == uid || souAdmin();
+         allow update, delete: if souAdmin() || request.auth.uid == uid;
+       }
+       match /produtos/{id} { allow read, write: if logado(); }
+       match /entradas_produtos/{id} { allow read, write: if logado(); }
+       match /saidas_produtos/{id} { allow read, write: if logado(); }
+       match /historico/{id} { allow read, write: if logado(); }
+     }
+   }
+   ```
+
+4. Faça commit e push para o branch `main`.
+5. No GitHub, vá em **Settings → Pages** e selecione **Deploy from a branch → main → / (root)**.
+6. Acesse `https://mattttheus.github.io/Auxiliar_Odont/`, cadastre-se em **Criar conta**
+   (o primeiro usuário criado vira administrador automaticamente).
+
+## Limitações do modelo 100% estático
+
+- Criar/editar contas de outros usuários exige que o admin esteja logado no navegador
+  (feito via app Firebase secundário para não derrubar a sessão do admin).
+- Excluir um usuário remove apenas o perfil no Firestore; a conta de login deve ser
+  removida manualmente em *Firebase Console → Authentication*.
+- Redefinição de senha de terceiros é feita por e-mail (`sendPasswordResetEmail`).
+
+---
+
 ROTEIRO DE APRESENTAÇÃO DO PROJETO
 AUXILIAR ODONT — SISTEMA DE CONTROLE DE ESTOQUE
 
@@ -18,7 +62,7 @@ O sistema foi desenvolvido utilizando as tecnologias PHP, MySQL, HTML, CSS, Java
 
 O principal objetivo do projeto é reduzir falhas no controle manual de estoque, melhorar a organização dos materiais e auxiliar na tomada de decisão através de relatórios e gráficos.
 
-2. PROBLEMA IDENTIFICADO
+1. PROBLEMA IDENTIFICADO
 
 Muitos consultórios odontológicos realizam o controle de materiais de forma manual, utilizando planilhas ou anotações físicas, o que pode gerar:
 
@@ -30,7 +74,7 @@ Muitos consultórios odontológicos realizam o controle de materiais de forma ma
 
 Pensando nisso, foi desenvolvido o sistema Auxiliar Odont.
 
-3. OBJETIVO DO SISTEMA
+1. OBJETIVO DO SISTEMA
 
 O sistema possui como objetivo principal automatizar o controle de estoque odontológico, permitindo:
 
@@ -41,7 +85,7 @@ O sistema possui como objetivo principal automatizar o controle de estoque odont
 - Dashboard administrativo com gráficos;
 - Exportação de dados para CSV.
 
-4. FUNCIONALIDADES PRINCIPAIS
+1. FUNCIONALIDADES PRINCIPAIS
 
 4.1 Login Seguro
 O sistema possui autenticação de usuários, permitindo acesso apenas mediante email e senha cadastrados.
@@ -95,24 +139,27 @@ Os dados do estoque podem ser exportados em formato CSV, facilitando:
 - Compartilhamento das informações;
 - Backup administrativo.
 
-5. TECNOLOGIAS UTILIZADAS
+1. TECNOLOGIAS UTILIZADAS
 
 Front-end:
+
 - HTML5
 - CSS3
-- Bootstrap
-- JavaScript
+- Bootstrap 5
+- JavaScript (ES Modules)
 
-Back-end:
-- PHP
+Backend/Dados (nuvem):
 
-Banco de Dados:
-- MySQL
+- Firebase Authentication
+- Firebase Firestore
 
 Bibliotecas:
+
 - Chart.js (gráficos)
 
-6. BANCO DE DADOS
+(Versão legada em PHP + MySQL disponível em legacy-php/, mantida apenas como referência.)
+
+1. BANCO DE DADOS
 
 O sistema utiliza um banco de dados MySQL chamado:
 
@@ -126,7 +173,7 @@ Entre as principais tabelas estão:
 
 O banco foi estruturado para garantir integridade e organização das informações.
 
-7. DIFERENCIAIS DO PROJETO
+1. DIFERENCIAIS DO PROJETO
 
 Os principais diferenciais do sistema são:
 
@@ -145,7 +192,7 @@ Além disso, o sistema pode receber futuras melhorias, como:
 - Notificações de estoque mínimo;
 - Backup automático.
 
-8. CONCLUSÃO
+1. CONCLUSÃO
 
 O projeto Auxiliar Odont demonstrou como a tecnologia pode contribuir para otimizar processos administrativos em clínicas odontológicas.
 

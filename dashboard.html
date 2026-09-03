@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Dashboard - Auxiliar Odont</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="assets/css/custom.css" rel="stylesheet">
+</head>
+
+<body class="theme-light">
+    <div id="app-shell"></div>
+
+    <div class="main-content">
+        <div class="container-fluid py-4">
+
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="fw-bold"><i class="bi bi-speedometer2"></i> Dashboard - Auxiliar Odont</h2>
+                <span class="badge bg-primary p-3" id="welcomeBadge">Bem-vindo</span>
+            </div>
+
+            <div id="alertsContainer"></div>
+
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="card shadow border-0 rounded-4 p-4">
+                        <h6 class="text-muted">Total de Itens</h6>
+                        <h2 id="statTotalItens">0</h2>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card shadow border-0 rounded-4 p-4">
+                        <h6 class="text-muted">Valor do Estoque</h6>
+                        <h2 id="statValorEstoque">R$ 0,00</h2>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card shadow border-0 rounded-4 p-4">
+                        <h6 class="text-muted">Vencendo (7 dias)</h6>
+                        <h2 id="statVencendo">0</h2>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mt-4 g-4">
+                <div class="col-md-6">
+                    <div class="card shadow border-0 rounded-4 p-4">
+                        <h5>Consumo do Estoque</h5>
+                        <canvas id="chart1"></canvas>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card shadow border-0 rounded-4 p-4">
+                        <h5>Valor do Estoque</h5>
+                        <canvas id="chart2"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-4 shadow border-0 rounded-4 p-4">
+                <h5>Produtos Próximos do Prazo</h5>
+                <canvas id="chart3"></canvas>
+            </div>
+
+        </div>
+    </div>
+
+    <footer>
+        <small>© <span id="year"></span> - Auxiliar Odont | Sistema de Controle de Estoque</small>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>document.getElementById("year").textContent = new Date().getFullYear();</script>
+    <script type="module" src="assets/js/dashboard.js"></script>
+</body>
+
+</html>
