@@ -3,10 +3,11 @@ import { requireAuth, getCurrentUser } from "./auth.js";
 import { renderShell } from "./layout.js";
 import {
     listProdutos, createProduto, updateProduto, deleteProduto,
-    registrarEntrada, registrarSaida
+    registrarEntrada, registrarSaida, getProdutoByCodigoBarras
 } from "./data.js";
 import { formatDateBR, formatMoneyBR, daysUntil, downloadCsv, escapeHtml, toDateInputValue } from "./utils.js";
 import { can } from "./permissions.js";
+import { abrirScanner } from "./scanner.js";
 
 const user = await requireAuth();
 if (user) {
@@ -48,6 +49,27 @@ if (user) {
 
         document.getElementById("modalEntrada").addEventListener("show.bs.modal", preencherSelects);
         document.getElementById("modalSaida").addEventListener("show.bs.modal", preencherSelects);
+
+        document.getElementById("btnScanProduto")?.addEventListener("click", () => {
+            abrirScanner(codigo => { document.getElementById("produtoCodigoBarras").value = codigo; });
+        });
+        document.getElementById("btnScanEntrada")?.addEventListener("click", () => escanearParaSelect("entradaProdutoId", "entradaQuantidade"));
+        document.getElementById("btnScanSaida")?.addEventListener("click", () => escanearParaSelect("saidaProdutoId", "saidaQuantidade"));
+    }
+
+    async function escanearParaSelect(selectId, focusId) {
+        abrirScanner(async codigo => {
+            try {
+                const produto = await getProdutoByCodigoBarras(codigo);
+                if (!produto) { alert("Nenhum produto encontrado com o código: " + codigo); return; }
+                const select = document.getElementById(selectId);
+                if (![...select.options].some(o => o.value === String(produto.id))) preencherSelects();
+                select.value = produto.id;
+                document.getElementById(focusId)?.focus();
+            } catch (err) {
+                alert("Erro ao buscar produto: " + err.message);
+            }
+        });
     }
 
     await init();
@@ -130,25 +152,31 @@ if (user) {
         document.getElementById("produtoPreco").value = p.preco || 0;
         document.getElementById("produtoQuantidade").value = p.quantidade || 0;
         document.getElementById("produtoValidade").value = toDateInputValue(p.validade);
+        document.getElementById("produtoCodigoBarras").value = p.codigo_barras || "";
         new bootstrap.Modal(document.getElementById("modalProduto")).show();
     }
 
     async function salvarProduto(e) {
         e.preventDefault();
         const id = document.getElementById("produtoId").value;
+        const codigoBarras = document.getElementById("produtoCodigoBarras").value.trim();
         const data = {
             nome: document.getElementById("produtoNome").value.trim(),
             descricao: document.getElementById("produtoDescricao").value.trim(),
             preco: parseFloat(document.getElementById("produtoPreco").value) || 0,
             quantidade: parseInt(document.getElementById("produtoQuantidade").value) || 0,
-            validade: document.getElementById("produtoValidade").value
+            validade: document.getElementById("produtoValidade").value,
+            codigo_barras: codigoBarras || null
         };
 
-        if (id) await updateProduto(id, data);
-        else await createProduto(data);
-
-        bootstrap.Modal.getInstance(document.getElementById("modalProduto")).hide();
-        await carregarProdutos();
+        try {
+            if (id) await updateProduto(id, data);
+            else await createProduto(data);
+            bootstrap.Modal.getInstance(document.getElementById("modalProduto")).hide();
+            await carregarProdutos();
+        } catch (err) {
+            alert("Erro ao salvar produto: " + (err.message.includes("duplicate") ? "Já existe um produto com esse código de barras." : err.message));
+        }
     }
 
     async function excluirProduto(id) {

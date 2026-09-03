@@ -14,6 +14,12 @@ export async function getProduto(id) {
     return data;
 }
 
+export async function getProdutoByCodigoBarras(codigo) {
+    const { data, error } = await supabase.from("produtos").select("*").eq("codigo_barras", codigo).maybeSingle();
+    if (error) throw error;
+    return data;
+}
+
 export async function createProduto(data) {
     const { error } = await supabase.from("produtos").insert(data);
     if (error) throw error;

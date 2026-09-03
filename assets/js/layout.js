@@ -5,6 +5,7 @@ import { can, roleLabel, roleBadgeClass } from "./permissions.js";
 const MENU_ITEMS = [
     { href: "dashboard.html", icon: "bi-house-door", label: "Dashboard", perm: null },
     { href: "produtos.html", icon: "bi-box", label: "Produtos", perm: "produtos_view" },
+    { href: "caixa.html", icon: "bi-cash-register", label: "Caixa (PDV)", perm: "saida" },
     { href: "usuarios.html", icon: "bi-people", label: "Usuários", perm: "usuarios" },
     { href: "historico.html", icon: "bi-clock-history", label: "Histórico", perm: "historico" },
     { href: "produtos.html?acao=entrada", icon: "bi-box-arrow-in-down", label: "Entrada", perm: "entrada" },
