@@ -9,7 +9,7 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./supabase-config.js";
 
 const user = await requireAdmin();
 if (user) {
-    renderShell("usuarios.html");
+    renderShell("usuarios.html", user);
     await carregarUsuarios();
     document.getElementById("btnNovoUsuario").addEventListener("click", abrirModalNovoUsuario);
     document.getElementById("formUsuario").addEventListener("submit", salvarUsuario);

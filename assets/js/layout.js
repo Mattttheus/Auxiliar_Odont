@@ -10,7 +10,7 @@ const MENU_ITEMS = [
     { href: "produtos.html?acao=saida", icon: "bi-box-arrow-up", label: "Saída" }
 ];
 
-export function renderShell(activePage) {
+export function renderShell(activePage, user) {
     const shell = document.getElementById("app-shell");
     if (!shell) return;
 
@@ -19,10 +19,20 @@ export function renderShell(activePage) {
         return `<a href="${item.href}" class="${isActive}"><i class="bi ${item.icon}"></i> ${item.label}</a>`;
     }).join("");
 
+    const saudacao = user ? `
+      <div class="sidebar-user">
+        <div class="sidebar-user-avatar"><i class="bi bi-person-fill"></i></div>
+        <div>
+          <div class="sidebar-user-name">Olá, ${user.nome}</div>
+          <span class="badge ${user.role === 'admin' ? 'bg-danger' : 'bg-primary'}">${user.role === 'admin' ? 'ADMIN' : 'USUÁRIO'}</span>
+        </div>
+      </div>` : "";
+
     shell.innerHTML = `
     <button class="menu-toggle btn btn-primary" id="menuToggle" title="Abrir menu"><i class="bi bi-list"></i></button>
     <div class="sidebar" id="sidebarMenu">
       <h4><i class="bi bi-box-seam"></i> Auxiliar Odont</h4>
+      ${saudacao}
       ${links}
       <hr />
       <div class="px-3 d-flex flex-column gap-2">

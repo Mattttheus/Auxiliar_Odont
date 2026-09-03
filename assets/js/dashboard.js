@@ -6,9 +6,7 @@ import { formatDateBR, formatMoneyBR, daysUntil, escapeHtml } from "./utils.js";
 
 const user = await requireAuth();
 if (user) {
-    renderShell("dashboard.html");
-    document.getElementById("welcomeBadge").textContent = `Bem-vindo, ${user.nome}`;
-    await carregarDashboard();
+    renderShell("dashboard.html", user);
 }
 
 async function carregarDashboard() {

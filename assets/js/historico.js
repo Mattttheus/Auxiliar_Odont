@@ -6,23 +6,21 @@ import { formatDateTimeBR, downloadCsv, escapeHtml } from "./utils.js";
 
 const user = await requireAuth();
 if (user) {
-    renderShell("historico.html");
-    await init();
-}
+    renderShell("historico.html", user);
 
-let historicoCache = [];
-let saidasCache = [];
+    let historicoCache = [];
+    let saidasCache = [];
 
-async function init() {
-    [historicoCache, saidasCache] = await Promise.all([listHistorico(), listSaidas()]);
-    renderHistorico();
-    renderSaidas();
-    document.getElementById("btnExportCsv").addEventListener("click", exportarCsv);
-}
+    async function init() {
+        [historicoCache, saidasCache] = await Promise.all([listHistorico(), listSaidas()]);
+        renderHistorico();
+        renderSaidas();
+        document.getElementById("btnExportCsv").addEventListener("click", exportarCsv);
+    }
 
-function renderHistorico() {
-    document.getElementById("statTotalHistorico").textContent = historicoCache.length;
-    document.getElementById("historicoTableBody").innerHTML = historicoCache.map(h => `
+    function renderHistorico() {
+        document.getElementById("statTotalHistorico").textContent = historicoCache.length;
+        document.getElementById("historicoTableBody").innerHTML = historicoCache.map(h => `
     <tr>
       <td>${escapeHtml(h.usuarioNome || "Usuário removido")}</td>
       <td>${escapeHtml(h.produtoNome || "Produto removido")}</td>
@@ -30,11 +28,11 @@ function renderHistorico() {
       <td>${escapeHtml(h.descricao || "")}</td>
       <td>${formatDateTimeBR(h.dataAcao)}</td>
     </tr>`).join("") || `<tr><td colspan="5" class="text-center text-muted py-4">Nenhum registro.</td></tr>`;
-}
+    }
 
-function renderSaidas() {
-    document.getElementById("statTotalSaidas").textContent = saidasCache.length;
-    document.getElementById("saidasTableBody").innerHTML = saidasCache.map(s => `
+    function renderSaidas() {
+        document.getElementById("statTotalSaidas").textContent = saidasCache.length;
+        document.getElementById("saidasTableBody").innerHTML = saidasCache.map(s => `
     <tr>
       <td>${escapeHtml(s.produtoNome)}</td>
       <td>${s.quantidade}</td>
@@ -42,9 +40,9 @@ function renderSaidas() {
       <td>${escapeHtml(s.observacao || "")}</td>
       <td>${formatDateTimeBR(s.dataSaida)}</td>
     </tr>`).join("") || `<tr><td colspan="5" class="text-center text-muted py-4">Nenhuma saída registrada.</td></tr>`;
-}
+    }
 
-function exportarCsv() {
-    const rows = saidasCache.map(s => [s.id, s.produtoNome, s.quantidade, formatDateTimeBR(s.dataSaida), s.usuarioNome || ""]);
-    downloadCsv("historico_saidas.csv", ["id", "produto", "quantidade", "data_saida", "usuario"], rows);
-}
+    function exportarCsv() {
+        const rows = saidasCache.map(s => [s.id, s.produtoNome, s.quantidade, formatDateTimeBR(s.dataSaida), s.usuarioNome || ""]);
+        downloadCsv("historico_saidas.csv", ["id", "produto", "quantidade", "data_saida", "usuario"], rows);
+    }
