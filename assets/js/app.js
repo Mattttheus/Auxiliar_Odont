@@ -17,6 +17,11 @@ const routes = {
   users: 'pages/usuarios/gerenciar_usuarios.html',
   userCreate: 'pages/usuarios/criar_usuario.html',
   userEdit: 'pages/usuarios/editar_usuario.html',
+  exportProducts: 'pages/produtos/exportar_produtos.html',
+  exportHistory: 'pages/historico/exportar_historico.html',
+  deleteProduct: 'pages/produtos/deletar_produto.html',
+  deleteProductLegacy: 'pages/deletar_produto.html',
+  deleteUser: 'pages/usuarios/excluir_usuario.html',
   logout: 'logout.html'
 };
 
@@ -248,8 +253,7 @@ function addHistory(state, payload) {
 function exportCsv(filename, headers, rows) {
   const csv = [headers.join(';')]
     .concat(rows.map(row => row.map(value => `"${String(value ?? '').replaceAll('"', '""')}"`).join(';')))
-    .join('
-');
+    .join('\n');
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
@@ -277,6 +281,10 @@ function topProducts(products, selector, mapper) {
       `;
     })
     .join('');
+}
+
+function getQueryParam(name) {
+  return new URLSearchParams(window.location.search).get(name);
 }
 
 function shellTemplate(user, active, title, subtitle, actions, content) {
@@ -740,7 +748,7 @@ function renderMovementPage(kind) {
             <label>Produto</label>
             <select class="select" name="produtoId" required>
               <option value="">Selecione...</option>
-              ${state.products.sort((a, b) => a.nome.localeCompare(b.nome)).map(product => `<option value="${product.id}">${escapeHtml(product.nome)} (${product.quantidade} em estoque)</option>`).join('')}
+              ${state.products.slice().sort((a, b) => a.nome.localeCompare(b.nome)).map(product => `<option value="${product.id}">${escapeHtml(product.nome)} (${product.quantidade} em estoque)</option>`).join('')}
             </select>
           </div>
           <div class="field"><label>Quantidade</label><input class="input" name="quantidade" type="number" min="1" required></div>
@@ -768,6 +776,97 @@ function renderMovementPage(kind) {
       setFlash('error', 'Selecione um produto e informe uma quantidade válida.');
       redirect(isEntry ? routes.entry : routes.exit);
       return;
+    }
+
+    function handleProductsExportPage() {
+      const user = requireAuth();
+      if (!user) return;
+      const state = getState();
+      const rows = state.products.map(product => [
+        product.id,
+        product.nome,
+        product.descricao,
+        product.preco,
+        product.quantidade,
+        product.validade
+      ]);
+      exportCsv('produtos_export.csv', ['id', 'nome', 'descricao', 'preco', 'quantidade', 'validade'], rows);
+      setFlash('success', 'Exportação de produtos iniciada.');
+      redirect(routes.products);
+    }
+
+    function handleHistoryExportPage() {
+      const user = requireAuth();
+      if (!user) return;
+      const state = getState();
+      const rows = state.history.map(row => [
+        row.id,
+        getUserById(row.usuarioId, state)?.nome || 'Usuário removido',
+        getProductById(row.produtoId, state)?.nome || 'Produto removido',
+        row.acao,
+        row.descricao,
+        row.dataAcao
+      ]);
+      exportCsv('historico.csv', ['id', 'usuario', 'produto', 'acao', 'descricao', 'data'], rows);
+      setFlash('success', 'Exportação do histórico iniciada.');
+      redirect(routes.history);
+    }
+
+    function handleProductDeletePage() {
+      const user = requireAuth({ admin: true });
+      if (!user) return;
+      const id = Number(getQueryParam('id') || 0);
+      const state = getState();
+      const product = getProductById(id, state);
+      if (!product) {
+        setFlash('error', 'Produto não encontrado.');
+        redirect(routes.products);
+        return;
+      }
+      state.products = state.products.filter(item => item.id !== id);
+      state.entries = state.entries.filter(item => item.produtoId !== id);
+      state.exits = state.exits.filter(item => item.produtoId !== id);
+      addHistory(state, {
+        usuarioId: user.id,
+        produtoId: id,
+        acao: 'Exclusão',
+        descricao: `Produto ${product.nome} removido do catálogo.`
+      });
+      saveState(state);
+      setFlash('success', 'Produto excluído com sucesso.');
+      redirect(routes.products);
+    }
+
+    function handleLegacyProductDeletePage() {
+      const id = getQueryParam('id');
+      redirect(`${routes.deleteProduct}${id ? `?id=${id}` : ''}`);
+    }
+
+    function handleUserDeletePage() {
+      const user = requireAuth({ admin: true });
+      if (!user) return;
+      const id = Number(getQueryParam('id') || 0);
+      if (id === user.id) {
+        setFlash('error', 'Não é possível excluir o próprio usuário.');
+        redirect(routes.users);
+        return;
+      }
+      const state = getState();
+      const target = getUserById(id, state);
+      if (!target) {
+        setFlash('error', 'Usuário não encontrado.');
+        redirect(routes.users);
+        return;
+      }
+      state.users = state.users.filter(item => item.id !== id);
+      addHistory(state, {
+        usuarioId: user.id,
+        acao: 'Usuário',
+        descricao: `Usuário ${target.nome} removido.`
+      });
+      saveState(state);
+      setFlash('success', 'Usuário excluído com sucesso.');
+      redirect(routes.users);
     }
     if (!isEntry && quantidade > Number(product.quantidade)) {
       setFlash('error', `Estoque insuficiente para ${product.nome}. Disponível: ${product.quantidade}.`);
@@ -1082,6 +1181,21 @@ function init() {
       break;
     case 'user-edit':
       renderUserEditPage();
+      break;
+    case 'export-products':
+      handleProductsExportPage();
+      break;
+    case 'export-history':
+      handleHistoryExportPage();
+      break;
+    case 'delete-product':
+      handleProductDeletePage();
+      break;
+    case 'delete-product-legacy':
+      handleLegacyProductDeletePage();
+      break;
+    case 'delete-user':
+      handleUserDeletePage();
       break;
     default:
       renderLoginPage();
