@@ -7,7 +7,16 @@ import { formatDateBR, formatMoneyBR, daysUntil, escapeHtml } from "./utils.js";
 const user = await requireAuth();
 if (user) {
     renderShell("dashboard.html", user);
+    document.getElementById("welcomeBadge").textContent = `Bem-vindo, ${user.nome}`;
+    await carregarDashboard();
 }
+
+const PALETA = ["#2563eb", "#16a34a", "#d97706", "#dc2626", "#7c3aed", "#0891b2", "#db2777", "#65a30d"];
+const isDark = () => document.body.classList.contains("theme-dark");
+const corTexto = () => isDark() ? "#cbd5e1" : "#475569";
+const corGrade = () => isDark() ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)";
+
+Chart.defaults.font.family = "'Segoe UI', sans-serif";
 
 async function carregarDashboard() {
     const produtos = await listProdutos();
@@ -42,17 +51,68 @@ async function carregarDashboard() {
 
     new Chart(document.getElementById("chart1"), {
         type: "bar",
-        data: { labels: nomes, datasets: [{ label: "Quantidade", data: quantidades }] }
+        data: {
+            labels: nomes,
+            datasets: [{
+                label: "Quantidade em estoque",
+                data: quantidades,
+                backgroundColor: "#2563eb",
+                borderRadius: 8,
+                maxBarThickness: 42
+            }]
+        },
+        options: {
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: { callbacks: { label: (ctx) => ` ${ctx.parsed.y} unidade(s)` } }
+            },
+            scales: {
+                x: { ticks: { color: corTexto() }, grid: { display: false } },
+                y: { beginAtZero: true, ticks: { color: corTexto() }, grid: { color: corGrade() } }
+            }
+        }
     });
 
     new Chart(document.getElementById("chart2"), {
         type: "pie",
-        data: { labels: nomes, datasets: [{ label: "Valor", data: valores }] }
+        data: {
+            labels: nomes,
+            datasets: [{ label: "Valor em estoque", data: valores, backgroundColor: PALETA }]
+        },
+        options: {
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: "bottom", labels: { color: corTexto(), boxWidth: 12, padding: 14 } },
+                tooltip: { callbacks: { label: (ctx) => ` ${ctx.label}: R$ ${formatMoneyBR(ctx.parsed)}` } }
+            }
+        }
     });
 
     new Chart(document.getElementById("chart3"), {
         type: "bar",
-        data: { labels: nomesValidade, datasets: [{ label: "Qtd vencendo", data: qtdValidade }] }
+        data: {
+            labels: nomesValidade,
+            datasets: [{
+                label: "Quantidade vencendo",
+                data: qtdValidade,
+                backgroundColor: "#d97706",
+                borderRadius: 8,
+                maxBarThickness: 42
+            }]
+        },
+        options: {
+            indexAxis: "y",
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: { callbacks: { label: (ctx) => ` ${ctx.parsed.x} unidade(s)` } }
+            },
+            scales: {
+                x: { beginAtZero: true, ticks: { color: corTexto() }, grid: { color: corGrade() } },
+                y: { ticks: { color: corTexto() }, grid: { display: false } }
+            }
+        }
     });
 }
 

@@ -340,6 +340,14 @@ body.theme-dark footer {
     }
 }
 
+/* ===== GRÁFICOS ===== */
+
+.chart-box {
+    position: relative;
+    height: 300px;
+    margin-top: 12px;
+}
+
 
 
 .table td {
