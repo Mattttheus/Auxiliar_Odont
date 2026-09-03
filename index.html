@@ -1,0 +1,512 @@
+<!doctype html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Auxiliar Odont | GitHub Pages</title>
+    <meta name="description"
+        content="Versão estática do Auxiliar Odont para GitHub Pages com login demo, dashboard, controle de produtos, usuários, histórico e exportação CSV no navegador.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="assets/css/custom.css" rel="stylesheet">
+</head>
+
+<body class="theme-light">
+    <section id="authScreen" class="auth-screen">
+        <div class="auth-card">
+            <div class="auth-hero">
+                <span class="auth-badge"><i class="bi bi-globe-americas"></i> Publicação pronta para GitHub Pages</span>
+                <h1>Auxiliar Odont</h1>
+                <p>
+                    Esta versão foi adaptada para rodar online no GitHub Pages com HTML, CSS e JavaScript.
+                    O sistema funciona como demonstração interativa no navegador, sem PHP ou MySQL.
+                </p>
+
+                <div class="auth-feature-list">
+                    <div class="auth-feature">
+                        <i class="bi bi-bar-chart-line-fill"></i>
+                        <div>
+                            <strong>Dashboard visual</strong>
+                            <div>Indicadores do estoque, alertas e gráficos com Chart.js.</div>
+                        </div>
+                    </div>
+                    <div class="auth-feature">
+                        <i class="bi bi-box-seam"></i>
+                        <div>
+                            <strong>CRUD de produtos</strong>
+                            <div>Cadastro, edição, entrada, saída e exportação CSV salvos no navegador.</div>
+                        </div>
+                    </div>
+                    <div class="auth-feature">
+                        <i class="bi bi-people-fill"></i>
+                        <div>
+                            <strong>Gestão de usuários e histórico</strong>
+                            <div>Perfis de acesso demo, trilha de movimentações e restauração rápida dos dados.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="auth-form">
+                <span class="section-badge"><i class="bi bi-shield-lock-fill"></i> Login de demonstração</span>
+                <h2>Entrar no sistema</h2>
+                <p>Use o acesso abaixo para abrir a versão online em português (pt-BR).</p>
+
+                <div id="loginAlert" class="alert alert-danger hidden" role="alert"></div>
+
+                <form id="loginForm" class="form-shell">
+                    <div>
+                        <label class="form-label" for="loginEmail">Email</label>
+                        <input id="loginEmail" name="email" type="email" class="form-control form-control-lg"
+                            placeholder="Digite seu email" required>
+                    </div>
+
+                    <div>
+                        <label class="form-label" for="loginSenha">Senha</label>
+                        <input id="loginSenha" name="senha" type="password" class="form-control form-control-lg"
+                            placeholder="Digite sua senha" required>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="bi bi-box-arrow-in-right"></i> Entrar
+                    </button>
+                </form>
+
+                <div class="demo-access">
+                    <strong>Acesso padrão</strong>
+                    <div>Email: <code>admin@local.com</code></div>
+                    <div>Senha: <code>123456</code></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div id="appShell" class="app-shell hidden">
+        <aside id="sidebar" class="sidebar">
+            <div class="sidebar-stack">
+                <div class="sidebar-brand">
+                    <div class="sidebar-brand-icon"><i class="bi bi-heart-pulse-fill"></i></div>
+                    <div>
+                        <h1>Auxiliar Odont</h1>
+                        <p>Controle de estoque online</p>
+                    </div>
+                </div>
+
+                <div class="sidebar-nav">
+                    <button class="nav-button active" data-section-target="dashboard">
+                        <i class="bi bi-speedometer2"></i> Dashboard
+                    </button>
+                    <button class="nav-button" data-section-target="produtos">
+                        <i class="bi bi-box-seam"></i> Produtos
+                    </button>
+                    <button class="nav-button" data-section-target="usuarios">
+                        <i class="bi bi-people"></i> Usuários
+                    </button>
+                    <button class="nav-button" data-section-target="historico">
+                        <i class="bi bi-clock-history"></i> Histórico
+                    </button>
+                </div>
+
+                <div class="sidebar-footer">
+                    <div class="glass-card p-3">
+                        <div class="small text-secondary mb-1">Sessão atual</div>
+                        <div id="appUserName" class="fw-semibold">Administrador</div>
+                        <div id="appUserRole" class="small text-secondary">Administrador</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <main class="content-shell">
+            <header class="content-header">
+                <div>
+                    <button id="mobileSidebarToggle" class="btn btn-outline-primary mobile-sidebar-toggle">
+                        <i class="bi bi-list"></i>
+                    </button>
+                </div>
+
+                <div class="content-actions">
+                    <button id="themeToggle" class="btn btn-outline-secondary">
+                        <i id="themeIcon" class="bi bi-moon-stars-fill"></i>
+                    </button>
+                    <button id="resetDemoBtn" class="btn btn-outline-primary">
+                        <i class="bi bi-arrow-clockwise"></i> Restaurar demo
+                    </button>
+                    <button id="logoutBtn" class="btn btn-danger">
+                        <i class="bi bi-box-arrow-right"></i> Sair
+                    </button>
+                </div>
+            </header>
+
+            <section class="page-hero glass-card">
+                <span class="section-badge"><i class="bi bi-github"></i> GitHub Pages</span>
+                <h2>Sistema convertido para publicação estática</h2>
+                <p>
+                    O projeto original em PHP/MySQL foi transformado em uma experiência online compatível com GitHub
+                    Pages.
+                    Os dados da demonstração ficam salvos no navegador com <code>localStorage</code>.
+                </p>
+                <div class="quick-list">
+                    <div class="quick-item">
+                        <i class="bi bi-translate"></i>
+                        <div>
+                            <strong>Idioma configurado</strong>
+                            <div class="muted-text">Páginas, datas e moeda em português do Brasil.</div>
+                        </div>
+                    </div>
+                    <div class="quick-item">
+                        <i class="bi bi-cloud-check"></i>
+                        <div>
+                            <strong>Hospedagem pronta</strong>
+                            <div class="muted-text">Estrutura estática publicada pelo fluxo do GitHub Pages.</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section data-section="dashboard">
+                <div id="dashboardCards" class="stats-grid mb-4"></div>
+
+                <div class="metrics-grid mb-4">
+                    <article class="metric-card">
+                        <div class="table-card-header">
+                            <div>
+                                <h3>Consumo do estoque</h3>
+                                <div id="productSummary" class="table-subtitle"></div>
+                            </div>
+                        </div>
+                        <div class="canvas-shell">
+                            <canvas id="stockChart"></canvas>
+                        </div>
+                    </article>
+
+                    <article class="metric-card">
+                        <div class="table-card-header">
+                            <div>
+                                <h3>Valor por produto</h3>
+                                <div id="userSummary" class="table-subtitle"></div>
+                            </div>
+                        </div>
+                        <div class="canvas-shell">
+                            <canvas id="valueChart"></canvas>
+                        </div>
+                    </article>
+                </div>
+
+                <div class="metrics-grid">
+                    <article class="table-card">
+                        <div class="table-card-header">
+                            <div>
+                                <h3>Alertas de vencimento</h3>
+                                <div class="table-subtitle">Produtos vencidos ou próximos do vencimento</div>
+                            </div>
+                        </div>
+                        <div id="alertsList"></div>
+                    </article>
+
+                    <article class="metric-card">
+                        <div class="table-card-header">
+                            <div>
+                                <h3>Movimentações recentes</h3>
+                                <div id="historySummary" class="table-subtitle"></div>
+                            </div>
+                        </div>
+                        <div class="canvas-shell">
+                            <canvas id="movementChart"></canvas>
+                        </div>
+                    </article>
+                </div>
+            </section>
+
+            <section data-section="produtos" class="hidden">
+                <article class="table-card">
+                    <div class="table-card-header">
+                        <div>
+                            <h3>Produtos</h3>
+                            <div class="table-subtitle">Cadastro e movimentação de estoque para a versão GitHub Pages.</div>
+                        </div>
+                        <div class="toolbar">
+                            <input id="productSearch" type="search" class="form-control" placeholder="Buscar produto">
+                            <select id="productFilter" class="form-select">
+                                <option value="todos">Todos</option>
+                                <option value="baixo">Estoque baixo</option>
+                                <option value="vencendo">Vencendo</option>
+                                <option value="vencidos">Vencidos</option>
+                            </select>
+                            <button id="exportProductsBtn" class="btn btn-outline-primary">
+                                <i class="bi bi-download"></i> Exportar CSV
+                            </button>
+                            <button id="newProductBtn" class="btn btn-primary">
+                                <i class="bi bi-plus-circle"></i> Novo produto
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div id="productsCountLabel" class="table-subtitle"></div>
+                        <div class="page-note">Os dados ficam no navegador do visitante.</div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Produto</th>
+                                    <th>Categoria</th>
+                                    <th>Qtd</th>
+                                    <th>Preço</th>
+                                    <th>Validade</th>
+                                    <th>Status</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="productsTableBody"></tbody>
+                        </table>
+                    </div>
+
+                    <div id="emptyProducts" class="empty-state hidden">
+                        <p class="mb-0">Nenhum produto encontrado para este filtro.</p>
+                    </div>
+                </article>
+            </section>
+
+            <section data-section="usuarios" class="hidden">
+                <article class="table-card">
+                    <div class="table-card-header">
+                        <div>
+                            <h3>Usuários</h3>
+                            <div class="table-subtitle">Perfis de acesso usados apenas na demonstração local.</div>
+                        </div>
+                        <div class="toolbar">
+                            <input id="userSearch" type="search" class="form-control" placeholder="Buscar usuário">
+                            <button id="newUserBtn" class="btn btn-primary">
+                                <i class="bi bi-person-plus"></i> Novo usuário
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="usersCountLabel" class="table-subtitle mb-3"></div>
+
+                    <div class="table-responsive">
+                        <table class="table align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Email</th>
+                                    <th>Perfil</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usersTableBody"></tbody>
+                        </table>
+                    </div>
+
+                    <div id="emptyUsers" class="empty-state hidden">
+                        <p class="mb-0">Nenhum usuário encontrado.</p>
+                    </div>
+                </article>
+            </section>
+
+            <section data-section="historico" class="hidden">
+                <article class="table-card">
+                    <div class="table-card-header">
+                        <div>
+                            <h3>Histórico de saídas e entradas</h3>
+                            <div class="table-subtitle">Registros criados automaticamente a cada ação.</div>
+                        </div>
+                        <div class="toolbar">
+                            <input id="historySearch" type="search" class="form-control"
+                                placeholder="Buscar movimentação">
+                            <button id="exportHistoryBtn" class="btn btn-outline-primary">
+                                <i class="bi bi-download"></i> Exportar CSV
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="historyCountLabel" class="table-subtitle mb-3"></div>
+
+                    <div class="table-responsive">
+                        <table class="table align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Data</th>
+                                    <th>Tipo</th>
+                                    <th>Item</th>
+                                    <th>Qtd</th>
+                                    <th>Responsável</th>
+                                    <th>Observação</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyTableBody"></tbody>
+                        </table>
+                    </div>
+
+                    <div id="emptyHistory" class="empty-state hidden">
+                        <p class="mb-0">Nenhuma movimentação encontrada.</p>
+                    </div>
+                </article>
+            </section>
+
+            <section class="info-grid mt-4">
+                <article class="info-card">
+                    <h3>Compatibilidade</h3>
+                    <p class="mb-0">Sem backend, sem banco de dados externo e sem dependência de PHP para abrir no GitHub Pages.</p>
+                </article>
+                <article class="info-card">
+                    <h3>Persistência</h3>
+                    <p class="mb-0">As alterações da demo ficam guardadas em <code>localStorage</code> no próprio navegador.</p>
+                </article>
+                <article class="info-card">
+                    <h3>Publicação</h3>
+                    <p class="mb-0">O deploy automático pode ser executado pelo workflow do GitHub Pages ao enviar alterações para a branch.</p>
+                </article>
+            </section>
+
+            <footer class="app-footer">
+                © <span id="currentYear">2026</span> Auxiliar Odont · versão estática para GitHub Pages
+            </footer>
+        </main>
+    </div>
+
+    <div class="modal fade" id="productModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div>
+                        <h3 id="productModalTitle">Novo produto</h3>
+                        <div class="form-note">Cadastre produtos que serão salvos na demonstração do navegador.</div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <form id="productForm">
+                    <div class="modal-body">
+                        <input id="productId" type="hidden">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label" for="productNome">Nome</label>
+                                <input id="productNome" class="form-control" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="productCategoria">Categoria</label>
+                                <input id="productCategoria" class="form-control" required>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label" for="productDescricao">Descrição</label>
+                                <textarea id="productDescricao" class="form-control" rows="3"></textarea>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label" for="productQuantidade">Quantidade</label>
+                                <input id="productQuantidade" type="number" min="0" class="form-control" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label" for="productPreco">Preço</label>
+                                <input id="productPreco" type="number" min="0" step="0.01" class="form-control" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label" for="productValidade">Validade</label>
+                                <input id="productValidade" type="date" class="form-control" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Salvar produto</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="userModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div>
+                        <h3 id="userModalTitle">Novo usuário</h3>
+                        <div class="form-note">Os perfis de acesso são exclusivos da demonstração estática.</div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <form id="userForm">
+                    <div class="modal-body">
+                        <input id="userId" type="hidden">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label" for="userNome">Nome</label>
+                                <input id="userNome" class="form-control" required>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label" for="userEmail">Email</label>
+                                <input id="userEmail" type="email" class="form-control" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="userSenha">Senha</label>
+                                <input id="userSenha" class="form-control" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="userRole">Perfil</label>
+                                <select id="userRole" class="form-select">
+                                    <option value="admin">Administrador</option>
+                                    <option value="user">Usuário</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Salvar usuário</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="movementModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div>
+                        <h3 id="movementModalTitle">Registrar movimentação</h3>
+                        <div class="form-note">Use esta tela para entrada ou saída de estoque.</div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <form id="movementForm">
+                    <div class="modal-body">
+                        <input id="movementType" type="hidden">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label" for="movementProductId">Produto</label>
+                                <select id="movementProductId" class="form-select"></select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label" for="movementQuantity">Quantidade</label>
+                                <input id="movementQuantity" type="number" min="1" class="form-control" required>
+                            </div>
+                            <div class="col-md-8">
+                                <label class="form-label" for="movementReason">Observação</label>
+                                <input id="movementReason" class="form-control" placeholder="Ex.: reposição ou uso em atendimento">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Confirmar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById("currentYear").textContent = new Date().getFullYear();
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js"></script>
+    <script src="assets/js/app.js"></script>
+</body>
+
+</html>

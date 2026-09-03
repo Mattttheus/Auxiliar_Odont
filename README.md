@@ -1,12 +1,39 @@
 ﻿# Auxiliar Odont — Sistema de Controle de Estoque
 
+## Versão para GitHub Pages
+
+O repositório agora possui uma versão estática pronta para publicação no GitHub Pages.
+
+### O que mudou
+
+- Foi criado um `index.html` compatível com GitHub Pages
+- A interface está em português do Brasil (`lang="pt-BR"`)
+- O sistema funciona no navegador com HTML, CSS e JavaScript
+- Os dados da demonstração são armazenados em `localStorage`
+- Há login demo, dashboard, CRUD de produtos, usuários, histórico e exportação CSV
+- A publicação automática está configurada em `.github/workflows/deploy-pages.yml`
+
+### Publicação no GitHub Pages
+
+1. Envie as alterações para a branch principal
+2. No GitHub, abra **Settings > Pages**
+3. Em **Build and deployment**, selecione **GitHub Actions**
+4. Aguarde a execução do workflow **Deploy GitHub Pages**
+
+### Acesso de demonstração
+
+- admin@local.com / 123456
+
+## Projeto original
+
 Projeto: Auxiliar Odont — sistema de controle de estoque desenvolvido em PHP e MySQL.
 Inclui CRUD de produtos e usuários, dashboard com Chart.js, exportação CSV e histórico de saídas.
 
-Usuário padrão (teste):
-- admin@local.com / 123456
+### Observação importante
 
-Importe database/estoque_db.sql no phpMyAdmin para criar o banco.
+O GitHub Pages não executa PHP ou MySQL.
+Por isso, a versão online publicada neste repositório é uma adaptação estática para demonstração.
+Para usar o sistema original com backend, continue utilizando PHP + MySQL e importe `database/estoque_db.sql` no phpMyAdmin.
 ROTEIRO DE APRESENTAÇÃO DO PROJETO
 AUXILIAR ODONT — SISTEMA DE CONTROLE DE ESTOQUE
 
