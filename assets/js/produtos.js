@@ -232,3 +232,5 @@ if (user) {
         const rows = produtosCache.map(p => [p.id, p.nome, p.descricao || "", p.preco, p.quantidade, toDateInputValue(p.validade)]);
         downloadCsv("produtos_export.csv", ["id", "nome", "descricao", "preco", "quantidade", "validade"], rows);
     }
+}
+

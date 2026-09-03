@@ -18,6 +18,8 @@ if (user) {
         document.getElementById("btnExportCsv").addEventListener("click", exportarCsv);
     }
 
+    await init();
+
     function renderHistorico() {
         document.getElementById("statTotalHistorico").textContent = historicoCache.length;
         document.getElementById("historicoTableBody").innerHTML = historicoCache.map(h => `
@@ -46,3 +48,5 @@ if (user) {
         const rows = saidasCache.map(s => [s.id, s.produtoNome, s.quantidade, formatDateTimeBR(s.dataSaida), s.usuarioNome || ""]);
         downloadCsv("historico_saidas.csv", ["id", "produto", "quantidade", "data_saida", "usuario"], rows);
     }
+}
+
