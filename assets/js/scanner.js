@@ -14,13 +14,28 @@ function ensureModal() {
           </div>
           <div class="modal-body">
             <div id="scannerReader"></div>
-            <p class="text-muted small mt-2 mb-0">Aponte a câmera para o código de barras ou QR do produto.</p>
+            <div id="scannerStatus" class="alert alert-warning d-none mt-2 mb-0 small"></div>
+            <p class="text-muted small mt-2 mb-2">Aponte a câmera para o código de barras ou QR do produto.</p>
+            <hr>
+            <label class="form-label small">Ou digite o código manualmente</label>
+            <div class="input-group">
+              <input type="text" class="form-control" id="scannerManualInput" placeholder="Código de barras">
+              <button type="button" class="btn btn-primary" id="scannerManualBtn">Buscar</button>
+            </div>
           </div>
         </div>
       </div>
     </div>`;
     document.body.appendChild(div.firstElementChild);
 }
+
+function mostrarStatus(msg) {
+    const el = document.getElementById("scannerStatus");
+    if (!el) return;
+    el.textContent = msg;
+    el.classList.remove("d-none");
+}
+
 
 async function pararScanner() {
     if (scannerInstance) {
@@ -52,21 +67,43 @@ export async function abrirScanner(onResult) {
     ensureModal();
     const modalEl = document.getElementById("modalScanner");
     const modal = new bootstrap.Modal(modalEl);
+    const statusEl = document.getElementById("scannerStatus");
+    statusEl.classList.add("d-none");
 
     modalEl.addEventListener("hidden.bs.modal", pararScanner, { once: true });
+
+    // Busca manual funciona mesmo se a câmera não estiver disponível.
+    const manualInput = document.getElementById("scannerManualInput");
+    const manualBtn = document.getElementById("scannerManualBtn");
+    manualInput.value = "";
+    const buscarManual = () => {
+        const codigo = manualInput.value.trim();
+        if (!codigo) return;
+        modal.hide();
+        onResult(codigo);
+    };
+    manualBtn.onclick = buscarManual;
+    manualInput.onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); buscarManual(); } };
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        mostrarStatus("Este navegador não permite acesso à câmera aqui. Use a busca manual abaixo.");
+        modal.show();
+        return;
+    }
 
     try {
         await carregarHtml5Qrcode();
     } catch (err) {
-        alert(err.message);
+        mostrarStatus(err.message + " Use a busca manual abaixo.");
+        modal.show();
         return;
     }
 
     // Só inicia a câmera depois que o modal terminou a animação de abertura,
     // senão o contêiner ainda tem tamanho zero e a biblioteca falha silenciosamente.
     modalEl.addEventListener("shown.bs.modal", async () => {
-        scannerInstance = new window.Html5Qrcode("scannerReader");
         try {
+            scannerInstance = new window.Html5Qrcode("scannerReader");
             await scannerInstance.start(
                 { facingMode: "environment" },
                 { fps: 10, qrbox: { width: 250, height: 150 } },
@@ -78,12 +115,12 @@ export async function abrirScanner(onResult) {
                 () => { /* frame sem leitura, ignora */ }
             );
         } catch (err) {
-            modal.hide();
-            alert("Não foi possível acessar a câmera: " + err.message);
+            mostrarStatus("Não foi possível acessar a câmera (" + err.message + "). Use a busca manual abaixo.");
         }
     }, { once: true });
 
     modal.show();
 }
+
 
 
