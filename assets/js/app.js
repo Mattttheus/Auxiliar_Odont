@@ -563,7 +563,8 @@ function renderProductsPage() {
   if (!user) return;
   const state = getState();
   const params = new URLSearchParams(window.location.search);
-  const filter = params.get('filter') || 'todos';
+  const rawFilter = params.get('filter') || 'todos';
+  const filter = ['todos', 'vencidos', 'prestes', 'baixo'].includes(rawFilter) ? rawFilter : 'todos';
   const editId = params.get('id');
   const editingProduct = editId ? getProductById(editId, state) : null;
 
