@@ -1,154 +1,38 @@
-﻿# Auxiliar Odont — Sistema de Controle de Estoque
+# Auxiliar Odont — Sistema de Controle de Estoque
 
-Projeto: Auxiliar Odont — sistema de controle de estoque desenvolvido em PHP e MySQL.
-Inclui CRUD de produtos e usuários, dashboard com Chart.js, exportação CSV e histórico de saídas.
+Projeto convertido para uma versão **100% estática em HTML, CSS e JavaScript**, compatível com **GitHub Pages**.
 
-Usuário padrão (teste):
-- admin@local.com / 123456
+## O que mudou
 
-Importe database/estoque_db.sql no phpMyAdmin para criar o banco.
-ROTEIRO DE APRESENTAÇÃO DO PROJETO
-AUXILIAR ODONT — SISTEMA DE CONTROLE DE ESTOQUE
+A aplicação original em PHP/MySQL foi adaptada para rodar sem servidor:
 
-1. APRESENTAÇÃO DO PROJETO
+- autenticação local com `sessionStorage`
+- banco de dados simulado com `localStorage`
+- dashboard, produtos, entradas, saídas, histórico e usuários em páginas HTML
+- exportação CSV no navegador
+- interface sem dependência de PHP, MySQL ou Bootstrap
 
-O projeto “Auxiliar Odont” foi desenvolvido com o objetivo de facilitar o gerenciamento e controle de estoque de materiais odontológicos, oferecendo uma solução simples, segura e eficiente para monitoramento de entradas, saídas e administração de produtos.
+## Acesso de demonstração
 
-O sistema foi desenvolvido utilizando as tecnologias PHP, MySQL, HTML, CSS, JavaScript e Bootstrap, permitindo uma interface intuitiva, responsiva e de fácil utilização.
+- `admin@local.com`
+- `123456`
 
-O principal objetivo do projeto é reduzir falhas no controle manual de estoque, melhorar a organização dos materiais e auxiliar na tomada de decisão através de relatórios e gráficos.
+## Como usar no GitHub Pages
 
-2. PROBLEMA IDENTIFICADO
+1. Publique o repositório no GitHub Pages apontando para a branch desejada.
+2. Abra `index.html` ou `pages/login.html`.
+3. Faça login com o usuário de demonstração.
+4. Os dados ficam salvos localmente no navegador via `localStorage`.
 
-Muitos consultórios odontológicos realizam o controle de materiais de forma manual, utilizando planilhas ou anotações físicas, o que pode gerar:
+## Estrutura principal
 
-- Perda de informações;
-- Divergência no estoque;
-- Dificuldade no controle de validade e quantidade;
-- Falta de histórico de movimentações;
-- Baixa produtividade administrativa.
+- `index.html` — entrada da aplicação
+- `assets/css/custom.css` — estilos globais
+- `assets/js/app.js` — autenticação, persistência e regras da aplicação
+- `pages/` — telas HTML do sistema
 
-Pensando nisso, foi desenvolvido o sistema Auxiliar Odont.
+## Observações
 
-3. OBJETIVO DO SISTEMA
-
-O sistema possui como objetivo principal automatizar o controle de estoque odontológico, permitindo:
-
-- Cadastro e gerenciamento de produtos;
-- Controle de entrada e saída de materiais;
-- Histórico das movimentações realizadas;
-- Controle de usuários com permissões;
-- Dashboard administrativo com gráficos;
-- Exportação de dados para CSV.
-
-4. FUNCIONALIDADES PRINCIPAIS
-
-4.1 Login Seguro
-O sistema possui autenticação de usuários, permitindo acesso apenas mediante email e senha cadastrados.
-
-Existe diferenciação de permissões entre:
-
-- Administrador (admin)
-- Usuário comum (user)
-
-Isso garante maior segurança e controle das ações realizadas dentro do sistema.
-
-4.2 Cadastro de Produtos (CRUD)
-O sistema permite:
-
-- Criar novos produtos;
-- Visualizar produtos cadastrados;
-- Editar informações;
-- Excluir produtos.
-
-Cada produto contém informações como:
-
-- Nome;
-- Descrição;
-- Quantidade em estoque;
-- Categoria;
-- Data de cadastro.
-
-4.3 Controle de Saídas
-Ao retirar materiais do estoque, o sistema registra:
-
-- Produto retirado;
-- Quantidade;
-- Usuário responsável;
-- Data e horário da movimentação.
-
-Esse histórico ajuda na rastreabilidade e auditoria do estoque.
-
-4.4 Dashboard Inteligente
-O sistema conta com um painel administrativo contendo gráficos desenvolvidos com Chart.js, permitindo:
-
-- Visualização do estoque;
-- Produtos com menor quantidade;
-- Histórico de movimentações;
-- Dados estatísticos do sistema.
-
-4.5 Exportação CSV
-Os dados do estoque podem ser exportados em formato CSV, facilitando:
-
-- Relatórios;
-- Auditorias;
-- Compartilhamento das informações;
-- Backup administrativo.
-
-5. TECNOLOGIAS UTILIZADAS
-
-Front-end:
-- HTML5
-- CSS3
-- Bootstrap
-- JavaScript
-
-Back-end:
-- PHP
-
-Banco de Dados:
-- MySQL
-
-Bibliotecas:
-- Chart.js (gráficos)
-
-6. BANCO DE DADOS
-
-O sistema utiliza um banco de dados MySQL chamado:
-
-estoque_db
-
-Entre as principais tabelas estão:
-
-- usuarios
-- produtos
-- historico_saida
-
-O banco foi estruturado para garantir integridade e organização das informações.
-
-7. DIFERENCIAIS DO PROJETO
-
-Os principais diferenciais do sistema são:
-
-- Interface simples e intuitiva;
-- Controle seguro por login;
-- Histórico completo das movimentações;
-- Dashboard com gráficos em tempo real;
-- Exportação de relatórios;
-- Facilidade de expansão futura.
-
-Além disso, o sistema pode receber futuras melhorias, como:
-
-- Leitura de QR Code;
-- Código de barras;
-- Controle de validade dos produtos;
-- Notificações de estoque mínimo;
-- Backup automático.
-
-8. CONCLUSÃO
-
-O projeto Auxiliar Odont demonstrou como a tecnologia pode contribuir para otimizar processos administrativos em clínicas odontológicas.
-
-Com a automação do controle de estoque, é possível reduzir erros, melhorar a organização e aumentar a eficiência no gerenciamento de materiais.
-
-Dessa forma, o sistema atende às necessidades básicas de controle e ainda oferece possibilidades de expansão para versões futuras mais completas.
+- Como o GitHub Pages não executa PHP nem MySQL, esta versão funciona como **demo estática**.
+- Os dados não são compartilhados entre usuários/navegadores.
+- Os arquivos `.php` antigos foram mantidos apenas como referência da implementação original.
