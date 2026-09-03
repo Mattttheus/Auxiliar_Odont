@@ -22,12 +22,18 @@ form.addEventListener("submit", async (e) => {
         const totalUsuarios = await countUsuarios();
         const role = totalUsuarios === 0 ? "admin" : "user";
 
-        const { data, error } = await supabase.auth.signUp({ email, password: senha });
+        // Guarda nome/perfil nos metadados do Auth: se "Confirm email" estiver ativo,
+        // o perfil na tabela usuarios só pode ser criado depois (sem sessão agora, o insert
+        // seria bloqueado pela política de segurança). O login.js cria o perfil nesse caso.
+        const { data, error } = await supabase.auth.signUp({
+            email,
+            password: senha,
+            options: { data: { nome, role } }
+        });
         if (error) throw error;
 
-        await createUsuarioProfile(data.user.id, { nome, email, role, ativo: true });
-
         if (data.session) {
+            await createUsuarioProfile(data.user.id, { nome, email, role, ativo: true });
             window.location.href = "index.html";
         } else {
             errorAlert.classList.remove("alert-danger", "d-none");
@@ -39,9 +45,11 @@ form.addEventListener("submit", async (e) => {
         let msg = err.message;
         if (msg.includes("already registered")) msg = "Este email já está cadastrado.";
         if (msg.includes("Password")) msg = "A senha deve ter pelo menos 6 caracteres.";
+        errorAlert.textContent = msg;
         errorAlert.classList.remove("d-none");
     } finally {
         btn.disabled = false;
         btn.textContent = "Cadastrar";
     }
 });
+

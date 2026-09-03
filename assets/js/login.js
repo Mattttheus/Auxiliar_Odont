@@ -1,5 +1,6 @@
 // Login com Supabase Authentication.
 import { supabase } from "./supabase-init.js";
+import { createUsuarioProfile, countUsuarios } from "./data.js";
 
 const form = document.getElementById("loginForm");
 const errorAlert = document.getElementById("errorAlert");
@@ -29,12 +30,23 @@ form.addEventListener("submit", async (e) => {
         const { data, error } = await supabase.auth.signInWithPassword({ email, password: senha });
         if (error) throw error;
 
-        const { data: perfil } = await supabase.from("usuarios").select("ativo").eq("id", data.user.id).single();
+        let { data: perfil } = await supabase.from("usuarios").select("ativo").eq("id", data.user.id).single();
+
+        // Se o cadastro foi feito com "Confirm email" ativo, o perfil ainda não existe
+        // (não havia sessão para criá-lo antes). Cria agora, no primeiro login confirmado.
         if (!perfil) {
-            showError("Perfil de usuário não encontrado.");
-            await supabase.auth.signOut();
-            return;
+            const meta = data.user.user_metadata || {};
+            const totalUsuarios = await countUsuarios();
+            const role = meta.role || (totalUsuarios === 0 ? "admin" : "user");
+            await createUsuarioProfile(data.user.id, {
+                nome: meta.nome || email.split("@")[0],
+                email,
+                role,
+                ativo: true
+            });
+            perfil = { ativo: true };
         }
+
         if (perfil.ativo === false) {
             await supabase.auth.signOut();
             showError("Usuário desativado. Contate um administrador.");
@@ -53,3 +65,4 @@ form.addEventListener("submit", async (e) => {
         btnLogin.textContent = "Entrar";
     }
 });
+
