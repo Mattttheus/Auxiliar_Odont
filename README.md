@@ -17,12 +17,17 @@ A aplicação original em PHP/MySQL foi adaptada para rodar sem servidor:
 - `admin@local.com`
 - `123456`
 
-## Como usar no GitHub Pages
+## Como acessar no GitHub Pages
 
-1. Publique o repositório no GitHub Pages apontando para a branch desejada.
-2. Abra `index.html` ou `pages/login.html`.
-3. Faça login com o usuário de demonstração.
-4. Os dados ficam salvos localmente no navegador via `localStorage`.
+1. No GitHub, abra **Settings > Pages**.
+2. Em **Source**, selecione **GitHub Actions**.
+3. Aguarde o workflow `Deploy GitHub Pages` publicar o site.
+4. Abra a URL no formato:
+   - `https://mattttheus.github.io/Auxiliar_Odont/`
+5. Faça login com o usuário de demonstração.
+6. Os dados ficam salvos localmente no navegador via `localStorage`.
+
+> Se você abrir apenas a página principal do repositório no GitHub, verá o `README.md`, não a aplicação publicada.
 
 ## Estrutura principal
 
