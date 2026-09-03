@@ -28,10 +28,18 @@ jobs:
       - name: Configure Pages
         uses: actions/configure-pages@v5
 
+      - name: Prepare static site
+        run: |
+          mkdir -p _site/assets
+          cp index.html _site/index.html
+          cp -R assets/css _site/assets/
+          cp -R assets/js _site/assets/
+          touch _site/.nojekyll
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: _site
 
       - name: Deploy
         id: deployment
