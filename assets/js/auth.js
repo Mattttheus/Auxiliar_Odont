@@ -1,5 +1,5 @@
-// Autenticação e perfil do usuário (substitui sessões PHP por Firebase Auth + Firestore).
-import { auth, db, onAuthStateChanged, signOut, doc, getDoc } from "./firebase-init.js";
+// Autenticação e perfil do usuário (substitui sessões PHP por Supabase Auth + Postgres).
+import { supabase } from "./supabase-init.js";
 
 let currentUser = null; // { uid, nome, email, role, ativo }
 
@@ -12,21 +12,21 @@ function writeCache(user) {
     sessionStorage.setItem("auxiliarOdontUser", JSON.stringify(user));
 }
 
-/** Resolve quando o estado de autenticação do Firebase é conhecido. */
-function waitForAuth() {
-    return new Promise((resolve) => {
-        const unsub = onAuthStateChanged(auth, async (fbUser) => {
-            unsub();
-            if (!fbUser) { currentUser = null; sessionStorage.removeItem("auxiliarOdontUser"); resolve(null); return; }
+async function loadProfile(authUser) {
+    const { data, error } = await supabase.from("usuarios").select("*").eq("id", authUser.id).single();
+    if (error || !data) return null;
+    return { uid: authUser.id, nome: data.nome, email: data.email, role: data.role, ativo: data.ativo };
+}
 
-            const snap = await getDoc(doc(db, "usuarios", fbUser.uid));
-            if (!snap.exists()) { currentUser = null; resolve(null); return; }
+/** Resolve quando o estado de autenticação do Supabase é conhecido. */
+async function waitForAuth() {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { currentUser = null; sessionStorage.removeItem("auxiliarOdontUser"); return null; }
 
-            currentUser = { uid: fbUser.uid, ...snap.data() };
-            writeCache(currentUser);
-            resolve(currentUser);
-        });
-    });
+    const profile = await loadProfile(session.user);
+    currentUser = profile;
+    if (profile) writeCache(profile);
+    return profile;
 }
 
 /** Garante que existe um usuário autenticado; senão redireciona para o login. */
@@ -56,7 +56,6 @@ export function getCurrentUser() {
 }
 
 export async function logout() {
-    await signOut(auth);
-    sessionStorage.removeItem("auxiliarOdontUser");
+    await supabase.auth.signOut();
     window.location.href = "index.html";
 }

@@ -1,5 +1,5 @@
-// Login com Firebase Authentication.
-import { auth, db, signInWithEmailAndPassword, onAuthStateChanged, doc, getDoc } from "./firebase-init.js";
+// Login com Supabase Authentication.
+import { supabase } from "./supabase-init.js";
 
 const form = document.getElementById("loginForm");
 const errorAlert = document.getElementById("errorAlert");
@@ -11,9 +11,10 @@ function showError(msg) {
 }
 
 // Se já estiver logado, vai direto para o dashboard.
-onAuthStateChanged(auth, (user) => {
-    if (user) window.location.href = "dashboard.html";
-});
+(async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) window.location.href = "dashboard.html";
+})();
 
 form.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -25,20 +26,24 @@ form.addEventListener("submit", async (e) => {
     const senha = document.getElementById("senha").value;
 
     try {
-        const cred = await signInWithEmailAndPassword(auth, email, senha);
-        const snap = await getDoc(doc(db, "usuarios", cred.user.uid));
-        if (!snap.exists()) {
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password: senha });
+        if (error) throw error;
+
+        const { data: perfil } = await supabase.from("usuarios").select("ativo").eq("id", data.user.id).single();
+        if (!perfil) {
             showError("Perfil de usuário não encontrado.");
+            await supabase.auth.signOut();
             return;
         }
-        if (snap.data().ativo === false) {
+        if (perfil.ativo === false) {
+            await supabase.auth.signOut();
             showError("Usuário desativado. Contate um administrador.");
             return;
         }
         window.location.href = "dashboard.html";
     } catch (err) {
         console.error(err);
-        if (err.code === "auth/invalid-credential" || err.code === "auth/wrong-password" || err.code === "auth/user-not-found") {
+        if (err.message === "Invalid login credentials") {
             showError("Email ou senha inválidos.");
         } else {
             showError("Erro ao entrar: " + err.message);

@@ -1,5 +1,5 @@
 // Cadastro de usuário (primeiro usuário criado vira admin automaticamente).
-import { auth, createUserWithEmailAndPassword } from "./firebase-init.js";
+import { supabase } from "./supabase-init.js";
 import { createUsuarioProfile, countUsuarios } from "./data.js";
 
 const form = document.getElementById("registroForm");
@@ -9,6 +9,8 @@ const btn = document.getElementById("btnRegistrar");
 form.addEventListener("submit", async (e) => {
     e.preventDefault();
     errorAlert.classList.add("d-none");
+    errorAlert.classList.remove("alert-success");
+    errorAlert.classList.add("alert-danger");
     btn.disabled = true;
     btn.textContent = "Cadastrando...";
 
@@ -20,16 +22,23 @@ form.addEventListener("submit", async (e) => {
         const totalUsuarios = await countUsuarios();
         const role = totalUsuarios === 0 ? "admin" : "user";
 
-        const cred = await createUserWithEmailAndPassword(auth, email, senha);
-        await createUsuarioProfile(cred.user.uid, { nome, email, role, ativo: true });
+        const { data, error } = await supabase.auth.signUp({ email, password: senha });
+        if (error) throw error;
 
-        window.location.href = "index.html";
+        await createUsuarioProfile(data.user.id, { nome, email, role, ativo: true });
+
+        if (data.session) {
+            window.location.href = "index.html";
+        } else {
+            errorAlert.classList.remove("alert-danger", "d-none");
+            errorAlert.classList.add("alert-success");
+            errorAlert.textContent = "Cadastro realizado! Verifique seu email para confirmar a conta antes de entrar.";
+        }
     } catch (err) {
         console.error(err);
         let msg = err.message;
-        if (err.code === "auth/email-already-in-use") msg = "Este email já está cadastrado.";
-        if (err.code === "auth/weak-password") msg = "A senha deve ter pelo menos 6 caracteres.";
-        errorAlert.textContent = msg;
+        if (msg.includes("already registered")) msg = "Este email já está cadastrado.";
+        if (msg.includes("Password")) msg = "A senha deve ter pelo menos 6 caracteres.";
         errorAlert.classList.remove("d-none");
     } finally {
         btn.disabled = false;

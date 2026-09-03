@@ -3,11 +3,9 @@ import { requireAdmin, getCurrentUser } from "./auth.js";
 import { renderShell } from "./layout.js";
 import { listUsuarios, updateUsuario, deleteUsuarioProfile, createUsuarioProfile } from "./data.js";
 import { formatDateBR, escapeHtml } from "./utils.js";
-import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
-import {
-    getAuth, createUserWithEmailAndPassword, sendPasswordResetEmail, signOut
-} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
-import { firebaseConfig } from "./firebase-config.js";
+import { supabase } from "./supabase-init.js";
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./supabase-config.js";
 
 const user = await requireAdmin();
 if (user) {
@@ -89,34 +87,32 @@ async function salvarUsuario(e) {
 }
 
 /**
- * Cria o novo usuário em um app Firebase secundário para não substituir
- * a sessão do admin logado (limitação do SDK client-side sem Admin SDK/Cloud Functions).
+ * Cria o novo usuário em um client Supabase secundário (sem persistir sessão) para
+ * não substituir a sessão do admin logado (limitação do SDK client-side sem Service Role Key).
  */
 async function criarUsuarioSemDeslogarAdmin(nome, email, senha, role, ativo) {
-    const secondaryApp = initializeApp(firebaseConfig, "secondary-" + Date.now());
-    const secondaryAuth = getAuth(secondaryApp);
-    try {
-        const cred = await createUserWithEmailAndPassword(secondaryAuth, email, senha);
-        await createUsuarioProfile(cred.user.uid, { nome, email, role, ativo });
-        await signOut(secondaryAuth);
-    } finally {
-        await deleteApp(secondaryApp);
-    }
-}
+    const secondaryClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        auth: { persistSession: false, autoRefreshToken: false }
+    });
+    const { data, error } = await secondaryClient.auth.signUp({ email, password: senha });
+    if (error) throw error;
+    if (!data.user) throw new Error("Não foi possível criar o usuário (verifique a confirmação de email nas configurações do Supabase Auth).");
+    await createUsuarioProfile(data.user.id, { nome, email, role, ativo });
 
-async function excluirUsuario(id) {
-    const u = usuariosCache.find(x => x.id === id);
-    if (!confirm(`Excluir o perfil de "${u?.nome}"? (a conta de autenticação deve ser removida no console do Firebase)`)) return;
-    await deleteUsuarioProfile(id);
-    await carregarUsuarios();
-}
-
-async function resetarSenha(email) {
-    const { auth } = await import("./firebase-init.js");
-    try {
-        await sendPasswordResetEmail(auth, email);
-        alert("Email de redefinição de senha enviado para " + email);
-    } catch (err) {
-        alert("Erro ao enviar email: " + err.message);
+    async function excluirUsuario(id) {
+        const u = usuariosCache.find(x => x.id === id);
+        if (!confirm(`Excluir o perfil de "${u?.nome}"? (a conta de autenticação deve ser removida no console do Supabase)`)) return;
+        await deleteUsuarioProfile(id);
+        await carregarUsuarios();
     }
-}
+
+    async function resetarSenha(email) {
+        try {
+            const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                redirectTo: window.location.origin + window.location.pathname.replace("usuarios.html", "index.html")
+            });
+            if (error) throw error;
+        } catch (err) {
+            alert("Erro ao enviar email: " + err.message);
+        }
+    }
