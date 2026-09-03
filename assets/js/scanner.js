@@ -30,6 +30,23 @@ async function pararScanner() {
     }
 }
 
+let carregandoLib = null;
+
+/** Carrega o script UMD da biblioteca via <script> tradicional (import() não é confiável para UMD). */
+function carregarHtml5Qrcode() {
+    if (window.Html5Qrcode) return Promise.resolve();
+    if (carregandoLib) return carregandoLib;
+
+    carregandoLib = new Promise((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = "https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js";
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error("Falha ao carregar a biblioteca de leitura de código de barras."));
+        document.head.appendChild(script);
+    });
+    return carregandoLib;
+}
+
 /** Abre o modal de câmera e chama onResult(texto) assim que decodificar um código. */
 export async function abrirScanner(onResult) {
     ensureModal();
@@ -39,8 +56,12 @@ export async function abrirScanner(onResult) {
     modalEl.addEventListener("hidden.bs.modal", pararScanner, { once: true });
     modal.show();
 
-    if (!window.Html5Qrcode) {
-        await import("https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js");
+    try {
+        await carregarHtml5Qrcode();
+    } catch (err) {
+        modal.hide();
+        alert(err.message);
+        return;
     }
 
     scannerInstance = new window.Html5Qrcode("scannerReader");
@@ -60,3 +81,4 @@ export async function abrirScanner(onResult) {
         alert("Não foi possível acessar a câmera: " + err.message);
     }
 }
+
