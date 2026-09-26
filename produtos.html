@@ -91,7 +91,7 @@
                 <div class="col-md-3">
                     <div class="card-dashboard bg-warning">
                         <div class="d-flex justify-content-between">
-                            <div><small>Prestes a vencer</small>
+                            <div><small id="labelPrestes">Prestes a vencer</small>
                                 <h2 id="statPrestes">0</h2>
                             </div>
                             <i class="bi bi-hourglass-split icon-card"></i>
@@ -110,26 +110,36 @@
                 </div>
             </div>
 
-            <div class="filters mb-3">
-                <button class="btn btn-outline-primary filter-btn active" data-filter="todos">Todos</button>
-                <button class="btn btn-outline-danger filter-btn" data-filter="vencidos">Vencidos</button>
-                <button class="btn btn-outline-warning filter-btn" data-filter="prestes">Prestes a vencer</button>
-                <button class="btn btn-outline-info filter-btn" data-filter="baixo">Baixo estoque</button>
+            <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+                <div class="filters d-flex flex-wrap gap-2">
+                    <button class="btn btn-outline-primary filter-btn active" data-filter="todos">Todos</button>
+                    <button class="btn btn-outline-danger filter-btn" data-filter="vencidos">Vencidos</button>
+                    <button class="btn btn-outline-warning filter-btn" data-filter="prestes">Prestes a vencer</button>
+                    <button class="btn btn-outline-info filter-btn" data-filter="baixo">Baixo estoque</button>
+                </div>
+                <div class="ms-auto d-flex gap-2 flex-wrap">
+                    <select class="form-select" id="filtroCategoria" style="width:auto">
+                        <option value="">Todas as categorias</option>
+                    </select>
+                    <input type="search" class="form-control" id="filtroBusca" style="width:240px"
+                        placeholder="Buscar nome, código ou local">
+                </div>
             </div>
 
             <div class="table-container">
                 <table class="table table-hover align-middle">
                     <thead>
                         <tr>
+                            <th>Código</th>
                             <th>Nome</th>
                             <th>Categoria</th>
-                            <th>Unidade</th>
+                            <th>Localização</th>
                             <th>Preço</th>
                             <th>Quantidade</th>
                             <th>Mín.</th>
                             <th>Validade</th>
                             <th>Status</th>
-                            <th width="260">Ações</th>
+                            <th width="190">Ações</th>
                         </tr>
                     </thead>
                     <tbody id="produtosTableBody"></tbody>
@@ -162,8 +172,13 @@
                             <div class="col-6 mb-3"><label class="form-label">Unidade</label><input class="form-control"
                                     id="produtoUnidade" placeholder="Ex.: Caixa, Frasco, Unidade"></div>
                         </div>
-                        <div class="mb-3"><label class="form-label">Preço</label><input class="form-control"
-                                type="number" step="0.01" id="produtoPreco" required></div>
+                        <div class="row">
+                            <div class="col-6 mb-3"><label class="form-label">Preço</label><input class="form-control"
+                                    type="number" step="0.01" id="produtoPreco" required></div>
+                            <div class="col-6 mb-3"><label class="form-label">Localização</label><input
+                                    class="form-control" id="produtoLocalizacao" placeholder="Ex.: Armário A / Prateleira 2">
+                            </div>
+                        </div>
                         <div class="row">
                             <div class="col-6 mb-3"><label class="form-label">Quantidade</label><input class="form-control"
                                     type="number" id="produtoQuantidade" required></div>
@@ -215,6 +230,12 @@
                         </div>
                         <div class="mb-3"><label class="form-label">Quantidade</label><input class="form-control"
                                 type="number" min="1" id="entradaQuantidade" required></div>
+                        <div class="row">
+                            <div class="col-6 mb-3"><label class="form-label">Lote</label><input class="form-control"
+                                    id="entradaLote" placeholder="Opcional"></div>
+                            <div class="col-6 mb-3"><label class="form-label">Validade do lote</label><input
+                                    class="form-control" type="date" id="entradaValidade"></div>
+                        </div>
                         <div class="mb-3"><label class="form-label">Observação</label><input class="form-control"
                                 id="entradaObservacao"></div>
                     </div>
@@ -255,6 +276,19 @@
                         <button type="submit" class="btn btn-danger">Registrar Saída</button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Lotes -->
+    <div class="modal fade" id="modalLotes" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-layers"></i> <span id="modalLotesTitulo">Lotes</span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="modalLotesBody"></div>
             </div>
         </div>
     </div>

@@ -2,7 +2,7 @@
 import { requirePermission } from "./permissions.js";
 import { getCurrentUser } from "./auth.js";
 import { renderShell } from "./layout.js";
-import { listProdutos, getProdutoByCodigoBarras, registrarSaida } from "./data.js";
+import { listProdutos, getProdutoByCodigoBarras, registrarVenda } from "./data.js";
 import { formatMoneyBR, escapeHtml } from "./utils.js";
 import { abrirScanner } from "./scanner.js";
 
@@ -42,13 +42,13 @@ function preencherSelect() {
 function adicionarAoCarrinho() {
     const produtoId = document.getElementById("caixaProdutoId").value;
     const quantidade = Math.max(1, parseInt(document.getElementById("caixaQuantidade").value) || 1);
-    const produto = produtosCache.find(p => p.id === produtoId);
+    const produto = produtosCache.find(p => String(p.id) === String(produtoId));
     if (!produto) return;
     adicionarProdutoAoCarrinho(produto, quantidade);
 }
 
 function adicionarProdutoAoCarrinho(produto, quantidade) {
-    const existente = carrinho.find(i => i.produtoId === produto.id);
+    const existente = carrinho.find(i => String(i.produtoId) === String(produto.id));
     if (existente) existente.quantidade += quantidade;
     else carrinho.push({
         produtoId: produto.id,
@@ -111,11 +111,8 @@ async function finalizarVenda() {
     btn.textContent = "Processando...";
 
     try {
-        const usuarioAtual = getCurrentUser();
-        for (const item of carrinho) {
-            const produto = produtosCache.find(p => p.id === item.produtoId);
-            await registrarSaida(produto, item.quantidade, "Venda via Caixa (PDV)", usuarioAtual);
-        }
+        // Uma única transação no banco: ou todos os itens saem, ou nenhum.
+        await registrarVenda(carrinho, produtosCache, getCurrentUser());
         alert("Venda finalizada com sucesso!");
         carrinho = [];
         produtosCache = await listProdutos();

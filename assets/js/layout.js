@@ -1,15 +1,20 @@
 // Sidebar, tema, comando de voz e beep sonoro (substitui includes/header.php e footer.php).
 import { logout } from "./auth.js";
 import { can, roleLabel, roleBadgeClass } from "./permissions.js";
+import { supabase } from "./supabase-init.js";
+import { getConfiguracoes } from "./data.js";
+import { calcularAlertas } from "./alertas.js";
 
 const MENU_ITEMS = [
     { href: "dashboard.html", icon: "bi-house-door", label: "Dashboard", perm: null },
     { href: "produtos.html", icon: "bi-box", label: "Produtos", perm: "produtos_view" },
+    { href: "movimentar.html", icon: "bi-qr-code-scan", label: "Movimentar (QR)", perm: "movimentar" },
     { href: "caixa.html", icon: "bi-cash-register", label: "Caixa (PDV)", perm: "saida" },
-    { href: "usuarios.html", icon: "bi-people", label: "Usuários", perm: "usuarios" },
+    { href: "compras.html", icon: "bi-cart-check", label: "Lista de Compras", perm: "compras" },
+    { href: "etiquetas.html", icon: "bi-qr-code", label: "Etiquetas QR", perm: "etiquetas" },
     { href: "historico.html", icon: "bi-clock-history", label: "Histórico", perm: "historico" },
-    { href: "produtos.html?acao=entrada", icon: "bi-box-arrow-in-down", label: "Entrada", perm: "entrada" },
-    { href: "produtos.html?acao=saida", icon: "bi-box-arrow-up", label: "Saída", perm: "saida" }
+    { href: "usuarios.html", icon: "bi-people", label: "Usuários", perm: "usuarios" },
+    { href: "sobre.html", icon: "bi-info-circle", label: "Sobre o projeto", perm: null }
 ];
 
 export function renderShell(activePage, user) {
@@ -37,6 +42,7 @@ export function renderShell(activePage, user) {
     <div class="sidebar" id="sidebarMenu">
       <h4><i class="bi bi-box-seam"></i> Auxiliar Odont</h4>
       ${saudacao}
+      <div id="sidebarAlertas"></div>
       ${links}
       <hr />
       <div class="px-3 d-flex flex-column gap-2">
@@ -66,6 +72,37 @@ export function renderShell(activePage, user) {
 
     setupTheme();
     setupVoice();
+    if (user) carregarAlertasSidebar(user);
+}
+
+/** Resumo de alertas (vencidos, vencendo, abaixo do mínimo) visível em todas as páginas. */
+async function carregarAlertasSidebar(user) {
+    const box = document.getElementById("sidebarAlertas");
+    if (!box) return;
+    try {
+        const [{ data, error }, cfg] = await Promise.all([
+            supabase.from("produtos").select("id, quantidade, estoque_minimo, validade"),
+            getConfiguracoes()
+        ]);
+        if (error) throw error;
+        const a = calcularAlertas(data, cfg);
+        if (a.total === 0) {
+            box.innerHTML = `<div class="sidebar-alertas ok"><i class="bi bi-check-circle"></i> Estoque sem alertas</div>`;
+            return;
+        }
+        const destinoBaixo = can(user, "compras") ? "compras.html" : "produtos.html?filter=baixo";
+        const chip = (href, cls, icon, n, label) => n > 0
+            ? `<a href="${href}" class="alerta-chip ${cls}" title="${label}"><i class="bi ${icon}"></i> ${n} <span>${label}</span></a>` : "";
+        box.innerHTML = `
+        <div class="sidebar-alertas">
+          <div class="sidebar-alertas-titulo"><i class="bi bi-bell-fill"></i> Alertas</div>
+          ${chip("produtos.html?filter=vencidos", "chip-danger", "bi-exclamation-octagon", a.vencidos.length, "vencido(s)")}
+          ${chip("produtos.html?filter=prestes", "chip-warning", "bi-hourglass-split", a.vencendo.length, `vence(m) em ${cfg.dias_alerta_validade}d`)}
+          ${chip(destinoBaixo, "chip-info", "bi-graph-down-arrow", a.baixo.length, "abaixo do mínimo")}
+        </div>`;
+    } catch (err) {
+        console.warn("Alertas da sidebar indisponíveis", err);
+    }
 }
 
 function setupTheme() {
@@ -125,28 +162,22 @@ function setupVoice() {
 }
 
 function handleVoiceCommand(text) {
-    if (text.includes("dashboard") || text.includes("painel")) {
-        window.location.href = "dashboard.html";
-        return;
-    }
-    if (text.includes("produto")) {
-        if (text.includes("vencid") || text.includes("vencimento")) {
-            window.location.href = "produtos.html?filter=vencidos";
-        } else if (text.includes("próximo") || text.includes("proximo") || text.includes("perto")) {
-            window.location.href = "produtos.html?filter=prestes";
-        } else {
-            window.location.href = "produtos.html";
-        }
-        return;
-    }
-    if (text.includes("usuário") || text.includes("usuario")) {
-        window.location.href = "usuarios.html";
-        return;
-    }
-    if (text.includes("sair") || text.includes("fechar")) {
-        logout();
-        return;
-    }
+    const ir = (href) => { window.location.href = href; };
+    if (text.includes("dashboard") || text.includes("painel") || text.includes("início") || text.includes("inicio")) return ir("dashboard.html");
+    if (text.includes("compra") || text.includes("repor") || text.includes("reposição") || text.includes("reposicao")) return ir("compras.html");
+    if (text.includes("etiqueta")) return ir("etiquetas.html");
+    if (text.includes("escanear") || text.includes("scanner") || text.includes("qr") || text.includes("movimentar")) return ir("movimentar.html");
+    if (text.includes("entrada")) return ir("movimentar.html?tipo=entrada");
+    if (text.includes("saída") || text.includes("saida") || text.includes("retirar")) return ir("movimentar.html?tipo=saida");
+    if (text.includes("caixa") || text.includes("venda")) return ir("caixa.html");
+    if (text.includes("histórico") || text.includes("historico")) return ir("historico.html");
+    if (text.includes("vencid")) return ir("produtos.html?filter=vencidos");
+    if (text.includes("vencendo") || text.includes("vencimento") || text.includes("validade")) return ir("produtos.html?filter=prestes");
+    if (text.includes("baixo") || text.includes("mínimo") || text.includes("minimo")) return ir("produtos.html?filter=baixo");
+    if (text.includes("produto") || text.includes("estoque")) return ir("produtos.html");
+    if (text.includes("usuário") || text.includes("usuario")) return ir("usuarios.html");
+    if (text.includes("sobre") || text.includes("projeto")) return ir("sobre.html");
+    if (text.includes("sair") || text.includes("fechar")) return logout();
     alert("Comando não reconhecido: " + text);
 }
 

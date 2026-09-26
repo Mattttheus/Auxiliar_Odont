@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Lista de Compras - Auxiliar Odont</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="assets/css/custom.css" rel="stylesheet">
+</head>
+
+<body class="theme-light">
+    <div id="app-shell"></div>
+
+    <div class="main-content">
+        <div class="container-fluid py-4 print-area">
+
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                <div>
+                    <h2 class="page-title"><i class="bi bi-cart-check"></i> Lista de Compras</h2>
+                    <p class="text-muted mb-0">Sugestão automática com base no estoque mínimo, no consumo real e na validade dos lotes</p>
+                </div>
+                <div class="d-flex gap-2 flex-wrap no-print">
+                    <button class="btn btn-outline-secondary" id="btnRecalcular"><i class="bi bi-arrow-clockwise"></i> Recalcular</button>
+                    <button class="btn btn-secondary" id="btnCsv"><i class="bi bi-download"></i> CSV</button>
+                    <button class="btn btn-outline-dark" id="btnImprimir"><i class="bi bi-printer"></i> Imprimir</button>
+                </div>
+            </div>
+
+            <div id="msgContainer"></div>
+
+            <div class="card shadow border-0 rounded-4 p-4 mb-4 no-print">
+                <div class="d-flex justify-content-between align-items-center" role="button" data-bs-toggle="collapse" data-bs-target="#painelCriterios">
+                    <h5 class="mb-0"><i class="bi bi-sliders"></i> Critérios de reposição</h5>
+                    <small class="text-muted" id="resumoCriterios"></small>
+                </div>
+                <div class="collapse" id="painelCriterios">
+                    <form id="formCriterios" class="row g-3 mt-1">
+                        <div class="col-sm-6 col-lg-3">
+                            <label class="form-label">Alerta de validade (dias)</label>
+                            <input type="number" class="form-control" id="cfgAlerta" min="1" max="365" required>
+                            <small class="text-muted">Unidades que vencem dentro desse prazo não contam como estoque útil.</small>
+                        </div>
+                        <div class="col-sm-6 col-lg-3">
+                            <label class="form-label">Janela de consumo (dias)</label>
+                            <input type="number" class="form-control" id="cfgJanela" min="7" max="730" required>
+                            <small class="text-muted">Período das saídas usado para medir o consumo médio diário.</small>
+                        </div>
+                        <div class="col-sm-6 col-lg-3">
+                            <label class="form-label">Cobertura desejada (dias)</label>
+                            <input type="number" class="form-control" id="cfgCobertura" min="1" max="365" required>
+                            <small class="text-muted">Por quantos dias a compra deve abastecer o consultório.</small>
+                        </div>
+                        <div class="col-sm-6 col-lg-3">
+                            <label class="form-label">Prazo de entrega (dias)</label>
+                            <input type="number" class="form-control" id="cfgReposicao" min="0" max="120" required>
+                            <small class="text-muted">Tempo médio entre o pedido e a chegada do fornecedor.</small>
+                        </div>
+                        <div class="col-12 small text-muted">
+                            <strong>Como é calculado:</strong> estoque útil = quantidade − unidades vencendo;
+                            ponto de pedido = mínimo + consumo diário × prazo de entrega;
+                            nível alvo = mínimo + maior valor entre (consumo diário × (cobertura + entrega)) e o mínimo.
+                            O item entra na lista quando o estoque útil chega ao ponto de pedido, e a sugestão é alvo − estoque útil.
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary" id="btnSalvarCriterios"><i class="bi bi-check2"></i> Salvar critérios</button>
+                            <small class="text-muted ms-2" id="avisoCriterios"></small>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="table-container mb-4">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                    <h5 class="mb-0"><i class="bi bi-magic"></i> Sugestão automática <span class="badge bg-primary" id="qtdSugestoes">0</span></h5>
+                    <div class="d-flex gap-2 no-print" id="acoesSalvar">
+                        <input class="form-control" id="tituloLista" style="width:240px" placeholder="Título da lista">
+                        <button class="btn btn-success" id="btnSalvarLista"><i class="bi bi-save"></i> Salvar lista</button>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th class="no-print"><input class="form-check-input" type="checkbox" id="selTodos" checked></th>
+                                <th>Produto</th>
+                                <th>Estoque</th>
+                                <th>Mín.</th>
+                                <th>Consumo/dia</th>
+                                <th>Vencendo</th>
+                                <th>Sugerido</th>
+                                <th style="width:110px">Pedir</th>
+                                <th>Motivo</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sugestaoBody">
+                            <tr><td colspan="9" class="text-center text-muted py-4">Calculando...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="table-container no-print">
+                <h5 class="mb-3"><i class="bi bi-archive"></i> Listas salvas</h5>
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead>
+                            <tr><th>#</th><th>Título</th><th>Criada por</th><th>Data</th><th>Itens</th><th>Status</th><th>Ações</th></tr>
+                        </thead>
+                        <tbody id="listasBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalLista" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalListaTitulo"></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="modalListaBody"></div>
+            </div>
+        </div>
+    </div>
+
+    <footer><small>© <span id="year"></span> - Auxiliar Odont | Sistema de Controle de Estoque</small></footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>document.getElementById("year").textContent = new Date().getFullYear();</script>
+    <script type="module" src="assets/js/compras.js"></script>
+</body>
+
+</html>

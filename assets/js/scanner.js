@@ -1,6 +1,37 @@
 // Scanner de código de barras/QR reutilizável via câmera do navegador (html5-qrcode).
 let scannerInstance = null;
 
+// Lições dos testes no consultório (Relatório Final, seção 3.3): a leitura à
+// distância capturava etiquetas vizinhas e o vinil brilhante gerava reflexo.
+// Por isso a área de leitura é pequena e o código só é aceito depois de lido
+// em quadros consecutivos iguais.
+export const DICA_LEITURA =
+    "Aproxime a câmera a cerca de 10–15 cm da etiqueta, centralizando só o código desejado. Etiquetas com vinil fosco evitam reflexo.";
+const LEITURAS_CONFIRMACAO = 2;
+const CONFIG_LEITURA = {
+    fps: 10,
+    qrbox: (w, h) => {
+        const lado = Math.floor(Math.min(w, h) * 0.6);
+        return { width: lado, height: lado };
+    },
+    aspectRatio: 1.333
+};
+
+/** Só repassa um código depois de lido N vezes seguidas (evita capturar a etiqueta vizinha). */
+function confirmador(onConfirmado) {
+    let ultimo = null;
+    let repeticoes = 0;
+    return (texto) => {
+        if (texto === ultimo) repeticoes++;
+        else { ultimo = texto; repeticoes = 1; }
+        if (repeticoes >= LEITURAS_CONFIRMACAO) {
+            ultimo = null;
+            repeticoes = 0;
+            onConfirmado(texto);
+        }
+    };
+}
+
 function ensureModal() {
     if (document.getElementById("modalScanner")) return;
     const div = document.createElement("div");
@@ -15,7 +46,7 @@ function ensureModal() {
           <div class="modal-body">
             <div id="scannerReader"></div>
             <div id="scannerStatus" class="alert alert-warning d-none mt-2 mb-0 small"></div>
-            <p class="text-muted small mt-2 mb-2">Aponte a câmera para o código de barras ou QR do produto.</p>
+            <p class="text-muted small mt-2 mb-2">${DICA_LEITURA}</p>
             <hr>
             <label class="form-label small">Ou digite o código manualmente</label>
             <div class="input-group">
@@ -104,14 +135,17 @@ export async function abrirScanner(onResult) {
     modalEl.addEventListener("shown.bs.modal", async () => {
         try {
             scannerInstance = new window.Html5Qrcode("scannerReader");
+            let concluido = false;
             await scannerInstance.start(
                 { facingMode: "environment" },
-                { fps: 10, qrbox: { width: 250, height: 150 } },
-                async (decodedText) => {
+                CONFIG_LEITURA,
+                confirmador(async (decodedText) => {
+                    if (concluido) return;
+                    concluido = true;
                     await pararScanner();
                     modal.hide();
                     onResult(decodedText);
-                },
+                }),
                 () => { /* frame sem leitura, ignora */ }
             );
         } catch (err) {
@@ -124,3 +158,31 @@ export async function abrirScanner(onResult) {
 
 
 
+
+/**
+ * Leitor contínuo embutido na página (sem modal). Chama onResult(texto) a cada
+ * código confirmado, ignorando o mesmo código por alguns segundos para não
+ * registrar duas vezes. Retorna uma função para parar a câmera.
+ */
+export async function iniciarLeitorContinuo(elementId, onResult, { intervaloMs = 2500 } = {}) {
+    await carregarHtml5Qrcode();
+    const leitor = new window.Html5Qrcode(elementId);
+    let ultimoCodigo = null;
+    let ultimoEm = 0;
+    await leitor.start(
+        { facingMode: "environment" },
+        CONFIG_LEITURA,
+        confirmador((texto) => {
+            const agora = Date.now();
+            if (texto === ultimoCodigo && agora - ultimoEm < intervaloMs) return;
+            ultimoCodigo = texto;
+            ultimoEm = agora;
+            onResult(texto);
+        }),
+        () => { /* frame sem leitura, ignora */ }
+    );
+    return async () => {
+        try { await leitor.stop(); } catch { /* já parado */ }
+        try { await leitor.clear(); } catch { /* nada a limpar */ }
+    };
+}

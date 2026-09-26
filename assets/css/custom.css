@@ -374,3 +374,137 @@ body.theme-dark footer {
         width: 230px;
     }
 }
+/* ===== ALERTAS NA SIDEBAR ===== */
+
+.sidebar-alertas {
+    margin: 0 16px 12px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.06);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    font-size: 13px;
+}
+
+.sidebar-alertas.ok {
+    color: #86efac;
+}
+
+.sidebar-alertas-titulo {
+    width: 100%;
+    color: #fbbf24;
+    font-weight: 600;
+}
+
+.sidebar .alerta-chip {
+    display: inline-flex;
+    gap: 4px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    border-left: none;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.sidebar .alerta-chip i {
+    font-size: 12px;
+    width: auto;
+}
+
+.sidebar .alerta-chip span {
+    font-weight: 400;
+}
+
+.sidebar .alerta-chip.chip-danger { background: rgba(220, 38, 38, 0.25); color: #fecaca; }
+.sidebar .alerta-chip.chip-warning { background: rgba(217, 119, 6, 0.25); color: #fde68a; }
+.sidebar .alerta-chip.chip-info { background: rgba(8, 145, 178, 0.25); color: #a5f3fc; }
+.sidebar .alerta-chip:hover { color: #fff; border-left-color: transparent; }
+
+/* ===== SCANNER EMBUTIDO (Movimentar) ===== */
+
+.scanner-embutido {
+    max-width: 420px;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #0f172a;
+}
+
+.produto-lido {
+    border-left: 6px solid #2563eb;
+}
+
+.produto-lido .localizacao {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+/* ===== ETIQUETAS QR ===== */
+
+.etiquetas-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 12px;
+}
+
+.etiqueta {
+    background: #fff;
+    color: #0f172a;
+    border: 1px dashed #94a3b8;
+    border-radius: 10px;
+    padding: 10px;
+    text-align: center;
+    break-inside: avoid;
+    page-break-inside: avoid;
+}
+
+.etiqueta svg,
+.etiqueta img {
+    width: 120px;
+    height: 120px;
+}
+
+.etiqueta-nome {
+    font-weight: 700;
+    font-size: 13px;
+    line-height: 1.2;
+    margin-top: 4px;
+}
+
+.etiqueta-info {
+    font-size: 11px;
+    color: #475569;
+}
+
+@media print {
+    .sidebar,
+    .menu-toggle,
+    footer,
+    .no-print {
+        display: none !important;
+    }
+
+    body,
+    body.theme-dark {
+        background: #fff !important;
+    }
+
+    .main-content {
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .etiquetas-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 6mm;
+    }
+
+    .etiqueta {
+        border: 1px solid #cbd5e1;
+    }
+
+    .print-area .card,
+    .print-area .table-container {
+        box-shadow: none !important;
+    }
+}

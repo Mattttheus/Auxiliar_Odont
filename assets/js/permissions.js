@@ -9,15 +9,18 @@ export const ROLES = {
 };
 
 // Matriz de permissões: cada ação liberada por perfil.
+// compras: ver sugestões e listas de compra; compras_edit: salvar/receber listas;
+// etiquetas: gerar e imprimir etiquetas QR; config: critérios de alerta e reposição.
 const PERMISSIONS = {
-    admin: { produtos_view: true, produtos_edit: true, entrada: true, saida: true, historico: true, usuarios: true },
-    estoquista: { produtos_view: true, produtos_edit: true, entrada: true, saida: true, historico: true, usuarios: false },
-    vendedor: { produtos_view: true, produtos_edit: false, entrada: false, saida: true, historico: true, usuarios: false },
-    dentista: { produtos_view: true, produtos_edit: false, entrada: false, saida: false, historico: true, usuarios: false }
+    admin: { produtos_view: true, produtos_edit: true, entrada: true, saida: true, historico: true, usuarios: true, compras: true, compras_edit: true, etiquetas: true, config: true },
+    estoquista: { produtos_view: true, produtos_edit: true, entrada: true, saida: true, historico: true, usuarios: false, compras: true, compras_edit: true, etiquetas: true, config: false },
+    vendedor: { produtos_view: true, produtos_edit: false, entrada: false, saida: true, historico: true, usuarios: false, compras: false, compras_edit: false, etiquetas: false, config: false },
+    dentista: { produtos_view: true, produtos_edit: false, entrada: false, saida: false, historico: true, usuarios: false, compras: true, compras_edit: false, etiquetas: false, config: false }
 };
 
 export function can(user, action) {
     if (!user) return false;
+    if (action === "movimentar") return can(user, "entrada") || can(user, "saida");
     const perfil = PERMISSIONS[user.role];
     return !!(perfil && perfil[action]);
 }

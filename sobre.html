@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Sobre o projeto - Auxiliar Odont</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="assets/css/custom.css" rel="stylesheet">
+</head>
+
+<body class="theme-light">
+    <div id="app-shell"></div>
+
+    <div class="main-content">
+        <div class="container-fluid py-4" style="max-width:1100px">
+
+            <h2 class="page-title"><i class="bi bi-info-circle"></i> Gestão Odonto: Sistema de Controle de Estoque</h2>
+            <p class="text-muted">Projeto Integrador — Engenharia da Computação e Ciência de Dados · UNIVESP · Polo São Caetano do Sul, 2026 · Tutora: Laura Menezes Silva</p>
+
+            <div class="d-flex gap-2 flex-wrap mb-4">
+                <a class="btn btn-danger" href="https://www.youtube.com/watch?v=SsE6sjPFjrw" target="_blank" rel="noopener"><i class="bi bi-youtube"></i> Vídeo de apresentação</a>
+                <a class="btn btn-dark" href="https://github.com/Mattttheus/Auxiliar_Odont" target="_blank" rel="noopener"><i class="bi bi-github"></i> Repositório no GitHub</a>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-lg-7">
+                    <div class="card shadow border-0 rounded-4 p-4 h-100">
+                        <h5>Objetivo</h5>
+                        <p>Sistema web de controle de estoque para consultórios odontológicos que otimiza o gerenciamento de
+                            insumos, reduz falhas do registro manual e evita desperdício por vencimento de materiais. Não abrange
+                            pacientes nem prontuários: concentra-se no controle de insumos.</p>
+                        <h6 class="mt-2">Metodologia: Design Thinking</h6>
+                        <ol class="mb-0 small">
+                            <li><strong>Imersão:</strong> levantamento com profissionais e estudantes de odontologia: registros
+                                manuais, falta de alertas, falhas no controle de validade e na atualização das movimentações.</li>
+                            <li><strong>Ideação:</strong> requisitos, modelagem do banco, leitura por QR Code e lista de compras automática.</li>
+                            <li><strong>Prototipação:</strong> protótipo funcional com cadastro, entrada/saída, QR Code e análise de estoque.</li>
+                            <li><strong>Testes e validação:</strong> testes funcionais e de integração, uso real no consultório parceiro e treinamento dos usuários.</li>
+                        </ol>
+                    </div>
+                </div>
+                <div class="col-lg-5">
+                    <div class="card shadow border-0 rounded-4 p-4 h-100">
+                        <h5>Equipe</h5>
+                        <ul class="mb-0">
+                            <li>André Ismael Viveiros</li>
+                            <li>Ederson Soto da Silva</li>
+                            <li>Guilherme De Almeida Claro</li>
+                            <li>José da Costa Nascimento</li>
+                            <li>Mattheus Vinicius Martins dos Santos</li>
+                            <li>Patrícia Wey Tung</li>
+                            <li>Robert Gomes de Araújo</li>
+                            <li>Silas Bomfim Lopes Ferreira</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-container mt-4">
+                <h5 class="mb-3">Objetivos específicos → onde estão no sistema</h5>
+                <table class="table align-middle mb-0">
+                    <thead><tr><th>Objetivo do relatório</th><th>Implementação</th></tr></thead>
+                    <tbody>
+                        <tr><td>Banco relacional com materiais, movimentações, usuários e validades</td>
+                            <td>Supabase/Postgres: produtos, lotes, entradas, saídas, histórico, listas de compra, configurações e usuários (com RLS)</td></tr>
+                        <tr><td>Cadastro e consulta de entradas e saídas</td>
+                            <td><a href="produtos.html">Produtos</a>, <a href="movimentar.html">Movimentar (QR)</a>, <a href="caixa.html">Caixa</a> e <a href="historico.html">Histórico</a></td></tr>
+                        <tr><td>Alertas de reposição e de validade próxima</td>
+                            <td>Alertas no menu lateral e no <a href="dashboard.html">Dashboard</a>, com prazo de validade configurável</td></tr>
+                        <tr><td>Acompanhamento de lotes e datas de validade</td>
+                            <td>Lote e validade informados na entrada; saídas consomem primeiro o lote que vence antes (FEFO)</td></tr>
+                        <tr><td>Identificação e movimentação por QR Code</td>
+                            <td><a href="etiquetas.html">Etiquetas QR</a> geradas do cadastro e leitura pela câmera em <a href="movimentar.html">Movimentar</a></td></tr>
+                        <tr><td>Relatório de compra automático (estoque e validade)</td>
+                            <td><a href="compras.html">Lista de Compras</a>: rotina SQL que considera mínimo, consumo real e lotes vencendo, com critérios ajustáveis</td></tr>
+                        <tr><td>Acesso remoto e seguro na nuvem</td>
+                            <td>GitHub Pages + Supabase Auth, níveis de acesso (admin, estoquista, vendedor, dentista) validados no banco</td></tr>
+                        <tr><td>Relatórios com análise de dados</td>
+                            <td>Dashboard (movimentações, mais consumidos, situação por categoria) e exportação CSV</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="card shadow border-0 rounded-4 p-4 mt-4">
+                <h5>Lições dos testes no consultório parceiro</h5>
+                <ul class="mb-0">
+                    <li><strong>Reflexo nas etiquetas:</strong> o vinil adesivo brilhante refletia a luz e atrapalhava a leitura;
+                        a troca por <strong>vinil fosco</strong> resolveu.</li>
+                    <li><strong>Distância da câmera:</strong> de longe, a câmera podia ler a etiqueta vizinha. Agora a área de leitura
+                        é menor, o código precisa ser lido em quadros seguidos e o item e sua localização aparecem para conferência antes do registro.</li>
+                    <li><strong>Critérios da lista de compras:</strong> o consultório pediu critérios mais próximos do consumo real.
+                        Agora a sugestão usa o consumo medido nas saídas, a cobertura desejada e o prazo de entrega, todos ajustáveis.</li>
+                </ul>
+            </div>
+
+        </div>
+    </div>
+
+    <footer><small>© <span id="year"></span> - Auxiliar Odont | Sistema de Controle de Estoque</small></footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>document.getElementById("year").textContent = new Date().getFullYear();</script>
+    <script type="module">
+        import { requireAuth } from "./assets/js/auth.js";
+        import { renderShell } from "./assets/js/layout.js";
+        const user = await requireAuth();
+        if (user) renderShell("sobre.html", user);
+    </script>
+</body>
+
+</html>

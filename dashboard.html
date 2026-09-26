@@ -23,45 +23,88 @@
 
             <div id="alertsContainer"></div>
 
-            <div class="row g-4">
-                <div class="col-md-4">
-                    <div class="card shadow border-0 rounded-4 p-4">
-                        <h6 class="text-muted">Total de Itens</h6>
-                        <h2 id="statTotalItens">0</h2>
+            <div class="row g-3">
+                <div class="col-6 col-lg">
+                    <a href="produtos.html" class="text-decoration-none">
+                        <div class="card shadow border-0 rounded-4 p-3 h-100">
+                            <h6 class="text-muted">Produtos cadastrados</h6>
+                            <h2 id="statProdutos" class="mb-0">0</h2>
+                            <small class="text-muted" id="statItens"></small>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-6 col-lg">
+                    <a href="compras.html" class="text-decoration-none" id="linkBaixo">
+                        <div class="card shadow border-0 rounded-4 p-3 h-100">
+                            <h6 class="text-muted"><i class="bi bi-graph-down-arrow text-info"></i> Abaixo do mínimo</h6>
+                            <h2 id="statBaixo" class="mb-0">0</h2>
+                            <small class="text-muted" id="statZerados"></small>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-6 col-lg">
+                    <a href="produtos.html?filter=prestes" class="text-decoration-none">
+                        <div class="card shadow border-0 rounded-4 p-3 h-100">
+                            <h6 class="text-muted"><i class="bi bi-hourglass-split text-warning"></i> <span id="labelVencendo">Vencendo</span></h6>
+                            <h2 id="statVencendo" class="mb-0">0</h2>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-6 col-lg">
+                    <a href="produtos.html?filter=vencidos" class="text-decoration-none">
+                        <div class="card shadow border-0 rounded-4 p-3 h-100">
+                            <h6 class="text-muted"><i class="bi bi-exclamation-octagon text-danger"></i> Vencidos</h6>
+                            <h2 id="statVencidos" class="mb-0">0</h2>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-12 col-lg">
+                    <a href="historico.html" class="text-decoration-none">
+                        <div class="card shadow border-0 rounded-4 p-3 h-100">
+                            <h6 class="text-muted">Saídas (30 dias)</h6>
+                            <h2 id="statSaidas30" class="mb-0">0</h2>
+                            <small class="text-muted" id="statEntradas30"></small>
+                        </div>
+                    </a>
+                </div>
+            </div>
+
+            <div class="row mt-4 g-4">
+                <div class="col-lg-7">
+                    <div class="card shadow border-0 rounded-4 p-4 h-100">
+                        <h5><i class="bi bi-activity text-primary"></i> Movimentações — últimos 30 dias</h5>
+                        <small class="text-muted">Unidades movimentadas por dia</small>
+                        <div class="chart-box"><canvas id="chartMov" aria-label="Entradas e saídas por dia nos últimos 30 dias" role="img"></canvas></div>
                     </div>
                 </div>
-                <div class="col-md-4">
-                    <div class="card shadow border-0 rounded-4 p-4">
-                        <h6 class="text-muted">Valor do Estoque</h6>
-                        <h2 id="statValorEstoque">R$ 0,00</h2>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card shadow border-0 rounded-4 p-4">
-                        <h6 class="text-muted">Vencendo (7 dias)</h6>
-                        <h2 id="statVencendo">0</h2>
+                <div class="col-lg-5">
+                    <div class="card shadow border-0 rounded-4 p-4 h-100">
+                        <h5><i class="bi bi-fire text-primary"></i> Mais consumidos</h5>
+                        <small class="text-muted" id="subConsumo">Unidades que saíram</small>
+                        <div class="chart-box"><canvas id="chartConsumo" aria-label="Produtos mais consumidos" role="img"></canvas></div>
                     </div>
                 </div>
             </div>
 
             <div class="row mt-4 g-4">
-                <div class="col-md-6">
-                    <div class="card shadow border-0 rounded-4 p-4">
-                        <h5><i class="bi bi-bar-chart-fill text-primary"></i> Consumo do Estoque</h5>
-                        <div class="chart-box"><canvas id="chart1"></canvas></div>
+                <div class="col-lg-7">
+                    <div class="card shadow border-0 rounded-4 p-4 h-100">
+                        <h5><i class="bi bi-diagram-3 text-primary"></i> Situação do estoque por categoria</h5>
+                        <small class="text-muted">Número de produtos em cada situação</small>
+                        <div class="chart-box"><canvas id="chartCategorias" aria-label="Produtos por categoria e situação" role="img"></canvas></div>
                     </div>
                 </div>
-                <div class="col-md-6">
-                    <div class="card shadow border-0 rounded-4 p-4">
-                        <h5><i class="bi bi-pie-chart-fill text-primary"></i> Valor do Estoque</h5>
-                        <div class="chart-box"><canvas id="chart2"></canvas></div>
+                <div class="col-lg-5">
+                    <div class="card shadow border-0 rounded-4 p-4 h-100">
+                        <h5><i class="bi bi-calendar-x text-warning"></i> Próximos vencimentos</h5>
+                        <div class="table-responsive" style="max-height:340px">
+                            <table class="table table-sm align-middle mb-0">
+                                <thead><tr><th>Produto</th><th>Validade</th><th>Qtd</th></tr></thead>
+                                <tbody id="vencimentosBody"></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
-            </div>
-
-            <div class="card mt-4 shadow border-0 rounded-4 p-4">
-                <h5><i class="bi bi-hourglass-split text-warning"></i> Produtos Próximos do Prazo</h5>
-                <div class="chart-box"><canvas id="chart3"></canvas></div>
             </div>
 
         </div>

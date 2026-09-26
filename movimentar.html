@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Movimentar (QR) - Auxiliar Odont</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="assets/css/custom.css" rel="stylesheet">
+</head>
+
+<body class="theme-light">
+    <div id="app-shell"></div>
+
+    <div class="main-content">
+        <div class="container-fluid py-4">
+
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+                <div>
+                    <h2 class="page-title"><i class="bi bi-qr-code-scan"></i> Movimentar por QR / Código</h2>
+                    <p class="text-muted mb-0">Escaneie a etiqueta da prateleira, confira o item e registre a entrada ou saída</p>
+                </div>
+                <div class="btn-group" role="group" aria-label="Tipo de movimentação">
+                    <input type="radio" class="btn-check" name="tipoMov" id="tipoSaida" value="saida" autocomplete="off">
+                    <label class="btn btn-outline-danger" for="tipoSaida"><i class="bi bi-box-arrow-up"></i> Saída</label>
+                    <input type="radio" class="btn-check" name="tipoMov" id="tipoEntrada" value="entrada" autocomplete="off">
+                    <label class="btn btn-outline-success" for="tipoEntrada"><i class="bi bi-box-arrow-in-down"></i> Entrada</label>
+                </div>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-lg-5">
+                    <div class="card shadow border-0 rounded-4 p-4">
+                        <h5><i class="bi bi-camera"></i> Leitura</h5>
+                        <div id="leitorQr" class="scanner-embutido mb-2"></div>
+                        <div class="d-flex gap-2 mb-2">
+                            <button class="btn btn-primary" id="btnCamera"><i class="bi bi-camera-video"></i> Iniciar câmera</button>
+                            <div class="form-check form-switch ms-auto align-self-center" title="Na saída, cada leitura baixa 1 unidade sem precisar confirmar">
+                                <input class="form-check-input" type="checkbox" id="modoRapido">
+                                <label class="form-check-label small" for="modoRapido">Saída rápida (1 un.)</label>
+                            </div>
+                        </div>
+                        <div id="leitorStatus" class="alert alert-warning small d-none mb-2"></div>
+                        <p class="small text-muted" id="dicaLeitura"></p>
+                        <hr>
+                        <label class="form-label small">Código manual ou leitor USB</label>
+                        <div class="input-group mb-3">
+                            <input type="text" class="form-control" id="codigoManual" placeholder="Ex.: 01-003" autocomplete="off">
+                            <button class="btn btn-outline-primary" id="btnBuscarCodigo"><i class="bi bi-search"></i></button>
+                        </div>
+                        <label class="form-label small">Ou procure pelo nome</label>
+                        <input class="form-control" id="buscaNome" list="listaProdutos" placeholder="Digite o nome do produto" autocomplete="off">
+                        <datalist id="listaProdutos"></datalist>
+                    </div>
+                </div>
+
+                <div class="col-lg-7">
+                    <div class="card shadow border-0 rounded-4 p-4 produto-lido d-none" id="cardProduto">
+                        <div class="d-flex justify-content-between flex-wrap gap-2">
+                            <div>
+                                <small class="text-muted" id="pCodigo"></small>
+                                <h4 class="mb-1" id="pNome"></h4>
+                                <div class="localizacao text-primary"><i class="bi bi-geo-alt-fill"></i> <span id="pLocal"></span></div>
+                            </div>
+                            <div class="text-end">
+                                <small class="text-muted">Estoque atual</small>
+                                <h2 class="mb-0" id="pEstoque"></h2>
+                                <small class="text-muted" id="pMinimo"></small>
+                            </div>
+                        </div>
+                        <div id="pLotes" class="small mt-2"></div>
+                        <hr>
+                        <form id="formMov">
+                            <div class="row g-2">
+                                <div class="col-sm-4">
+                                    <label class="form-label">Quantidade</label>
+                                    <input type="number" class="form-control form-control-lg" id="movQtd" min="1" value="1" required>
+                                </div>
+                                <div class="col-sm-4 campo-entrada">
+                                    <label class="form-label">Lote</label>
+                                    <input class="form-control form-control-lg" id="movLote" placeholder="Opcional">
+                                </div>
+                                <div class="col-sm-4 campo-entrada">
+                                    <label class="form-label">Validade</label>
+                                    <input type="date" class="form-control form-control-lg" id="movValidade">
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">Observação</label>
+                                    <input class="form-control" id="movObs" placeholder="Ex.: uso no consultório 2">
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2 mt-3">
+                                <button type="submit" class="btn btn-lg flex-grow-1" id="btnConfirmar"></button>
+                                <button type="button" class="btn btn-lg btn-outline-secondary" id="btnCancelar">Cancelar</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="card shadow border-0 rounded-4 p-4 text-center text-muted" id="cardVazio">
+                        <i class="bi bi-upc-scan" style="font-size:48px"></i>
+                        <p class="mb-0">Escaneie ou busque um produto para movimentar.</p>
+                    </div>
+
+                    <div class="table-container mt-4">
+                        <h5 class="mb-3"><i class="bi bi-list-check"></i> Registrado nesta sessão</h5>
+                        <table class="table table-sm align-middle mb-0">
+                            <thead>
+                                <tr><th>Hora</th><th>Tipo</th><th>Produto</th><th>Qtd</th><th>Estoque</th></tr>
+                            </thead>
+                            <tbody id="sessaoBody">
+                                <tr><td colspan="5" class="text-center text-muted">Nada registrado ainda.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <footer><small>© <span id="year"></span> - Auxiliar Odont | Sistema de Controle de Estoque</small></footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>document.getElementById("year").textContent = new Date().getFullYear();</script>
+    <script type="module" src="assets/js/movimentar.js"></script>
+</body>
+
+</html>

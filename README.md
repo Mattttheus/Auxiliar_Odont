@@ -25,6 +25,15 @@ não executa PHP nem hospeda MySQL. A versão original em PHP/MySQL foi preserva
       — importa os 96 produtos e o histórico de movimentações da planilha
       `Controle_de_Estoque.xlsx` para o banco, já com categoria e estoque mínimo
       preenchidos.
+   4. [legacy-php/database/supabase_migration_v3_relatorio_final.sql](legacy-php/database/supabase_migration_v3_relatorio_final.sql)
+      — alinha o banco ao Relatório Final do PI3: localização do item, **lotes com
+      validade** (saída FEFO), movimentações transacionais no banco (RPC
+      `registrar_movimentacao`, `registrar_venda`), auditoria automática de
+      cadastro/edição/ajuste/exclusão, **critérios de reposição configuráveis**,
+      **lista de compras automática** (`sugerir_lista_compras`) com listas salvas e
+      recebimento (`receber_lista_compra`), e índices. Sem ela o sistema continua
+      funcionando no modo antigo, mas lotes, listas de compra e critérios ficam
+      indisponíveis (a tela avisa).
 4. Em **Settings → API Keys**, copie a **Project URL** e a chave **anon/publishable**
    (NUNCA a `service_role`/secret) e cole em
    [assets/js/supabase-config.js](assets/js/supabase-config.js).
@@ -34,6 +43,19 @@ não executa PHP nem hospeda MySQL. A versão original em PHP/MySQL foi preserva
    (o primeiro usuário criado vira administrador automaticamente; a partir do segundo,
    todo novo cadastro nasce como "vendedor" e só um admin pode promovê-lo depois, em
    **Usuários**).
+
+## Funcionalidades (alinhadas ao Relatório Final)
+
+| Relatório | Tela / banco |
+|---|---|
+| Entradas e saídas registradas | Produtos, **Movimentar (QR)**, Caixa (PDV): tudo passa pela função `registrar_movimentacao` (uma transação, com histórico e origem) |
+| Lotes e datas de validade | Lote e validade na entrada; saída consome primeiro o lote que vence antes; botão *Lotes* em Produtos |
+| Localização do componente | Campo *Localização* no produto, exibido na leitura do QR e nas etiquetas |
+| QR Code para identificar e movimentar | **Etiquetas QR** (impressão, geração de códigos faltantes) + leitor contínuo com confirmação do item |
+| Problemas de leitura nos testes (reflexo, distância) | Área de leitura menor, código aceito só após leituras repetidas, dica de vinil fosco e aproximação |
+| Alertas de validade e reposição | Menu lateral e Dashboard, com prazo de validade configurável |
+| Lista de compras automática | **Lista de Compras**: estoque mínimo + consumo real + lotes vencendo, critérios ajustáveis (admin), listas salvas, recebimento dá entrada no estoque |
+| Relatórios com análise de dados | Dashboard (movimentações 30 dias, mais consumidos, situação por categoria) e CSV |
 
 ## Limitações do modelo 100% estático
 

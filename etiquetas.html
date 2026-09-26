@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Etiquetas QR - Auxiliar Odont</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="assets/css/custom.css" rel="stylesheet">
+</head>
+
+<body class="theme-light">
+    <div id="app-shell"></div>
+
+    <div class="main-content">
+        <div class="container-fluid py-4">
+
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3 no-print">
+                <div>
+                    <h2 class="page-title"><i class="bi bi-qr-code"></i> Etiquetas QR</h2>
+                    <p class="text-muted mb-0">Gere e imprima etiquetas para as prateleiras a partir do cadastro de produtos</p>
+                </div>
+                <div class="d-flex gap-2 flex-wrap">
+                    <button class="btn btn-outline-secondary" id="btnGerarCodigos"><i class="bi bi-magic"></i> Gerar códigos faltantes</button>
+                    <button class="btn btn-primary" id="btnImprimir"><i class="bi bi-printer"></i> Imprimir selecionadas</button>
+                </div>
+            </div>
+
+            <div class="alert alert-info small no-print">
+                <i class="bi bi-lightbulb"></i> Recomendações dos testes no consultório: proteja as etiquetas com
+                <strong>vinil adesivo fosco</strong> (o brilhante reflete a luz e atrapalha a leitura) e mantenha espaço
+                entre etiquetas vizinhas. Na leitura, aproxime a câmera do código desejado.
+            </div>
+
+            <div class="d-flex flex-wrap gap-2 align-items-center mb-3 no-print">
+                <select class="form-select" id="fCategoria" style="width:auto">
+                    <option value="">Todas as categorias</option>
+                </select>
+                <select class="form-select" id="fSituacao" style="width:auto">
+                    <option value="">Todos os produtos</option>
+                    <option value="baixo">Só abaixo do mínimo</option>
+                    <option value="semlocal">Só sem localização</option>
+                </select>
+                <select class="form-select" id="fTamanho" style="width:auto">
+                    <option value="90">QR pequeno</option>
+                    <option value="120" selected>QR médio</option>
+                    <option value="160">QR grande</option>
+                </select>
+                <input type="search" class="form-control" id="fBusca" style="width:220px" placeholder="Buscar">
+                <div class="form-check ms-2">
+                    <input class="form-check-input" type="checkbox" id="fTodos" checked>
+                    <label class="form-check-label" for="fTodos">Selecionar todas</label>
+                </div>
+                <span class="ms-auto text-muted small" id="contador"></span>
+            </div>
+
+            <div id="avisoSemCodigo" class="alert alert-warning small d-none no-print"></div>
+            <div class="etiquetas-grid" id="grid"></div>
+        </div>
+    </div>
+
+    <footer><small>© <span id="year"></span> - Auxiliar Odont | Sistema de Controle de Estoque</small></footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+    <script>document.getElementById("year").textContent = new Date().getFullYear();</script>
+    <script type="module" src="assets/js/etiquetas.js"></script>
+</body>
+
+</html>
