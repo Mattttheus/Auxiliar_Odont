@@ -1,1 +1,1 @@
-﻿@<?php header("Location: pages/login.php"); exit; ?>@
+<?php header("Location: pages/login.php"); exit; ?>

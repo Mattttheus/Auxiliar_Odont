@@ -7,12 +7,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $descricao = $conn->real_escape_string($_POST['descricao']);
     $preco = floatval($_POST['preco']);
     $quantidade = intval($_POST['quantidade']);
-    $validade = $_POST['validade'];
-    $data_atual = date('Y-m-d');
-    $data_validade = date('Y-m-d', strtotime($validade));
-    $diferenca = strtotime($data_validade) - strtotime($data_atual);
-    $qtd_validade = floor($diferenca / (60 * 60 * 24));
-    $produtos_validade = ($qtd_validade >= 0) ? 1 : 0;
+    $validade = $_POST['validade'] ? "'" . $conn->real_escape_string($_POST['validade']) . "'" : "NULL";
     $sql = "INSERT INTO produtos (nome, descricao, preco, quantidade, validade) VALUES ('$nome','$descricao',$preco,$quantidade,$validade)";
     if ($conn->query($sql)) {
         header('Location: produtos.php'); exit;
@@ -25,12 +20,8 @@ include("../includes/header.php");
 <div class="d-flex justify-content-between align-items-center">
     <h3>Produtos</h3>
     <div>
-        <a class="btn btn-secondary" href="exportar_produtos.php">
+        <a class="btn btn-secondary" href="produtos/exportar_produtos.php">
             <i class="bi bi-download"></i> Exportar CSV
-        </a>
-        <a class="btn btn-success" href="editar_produto.php">
-            <i class="bi bi-plus-lg"></i> Editar
-        </a>
         </a>
         <a class="btn btn-success" href="dashboard.php">
             <i class="bi bi-plus-lg"></i>Menu
@@ -59,8 +50,8 @@ include("../includes/header.php");
                 <input class="form-control" name="quantidade" type="number" required>
             </div>
             <div class="mb-3">
-                <label class="form-label">Validade</label>
-                <input class="form-control" name="validade" type="date" required>
+                <label class="form-label">Validade (opcional)</label>
+                <input class="form-control" name="validade" type="date">
             </div>
 
             <button class="btn btn-primary">Adicionar</button>

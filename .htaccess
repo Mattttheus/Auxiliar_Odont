@@ -1,0 +1,11 @@
+# Libera o projeto para a rede local: o Apache do WAMP só libera este computador por padrão.
+# O MySQL e o phpMyAdmin continuam acessíveis só daqui. O GitHub Pages ignora este arquivo.
+Require local
+Require ip 192.168.1
+Options -Indexes
+
+# Repositório, configuração do editor e arquivos que não são telas do sistema.
+RedirectMatch 404 "/\.(git|github|claude)(/|$)"
+<FilesMatch "\.(sql|docx|md|yml)$">
+    Require all denied
+</FilesMatch>

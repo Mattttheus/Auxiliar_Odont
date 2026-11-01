@@ -1,7 +1,7 @@
 <?php
 session_start();
-if (!isset($_SESSION['usuario'])) { header('Location: login.php'); exit; }
-include("../config/conexao.php");
+if (!isset($_SESSION['usuario'])) { header('Location: ../login.php'); exit; }
+include("../../config/conexao.php");
 if (!isset($_GET['id'])) { die('Produto não encontrado'); }
 $id = intval($_GET['id']);
 $res = $conn->query("SELECT * FROM produtos WHERE id=$id");
@@ -13,34 +13,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $descricao = $conn->real_escape_string($_POST['descricao']);
     $preco = floatval($_POST['preco']);
     $quantidade = intval($_POST['quantidade']);
-    $validade = $_POST['validade'];
-    $sql = "UPDATE produtos SET nome='$nome', descricao='$descricao', preco=$preco, quantidade=$quantidade validade=$validade WHERE id=$id";
+    $validade = $_POST['validade'] ? "'" . $conn->real_escape_string($_POST['validade']) . "'" : "NULL";
+    $sql = "UPDATE produtos SET nome='$nome', descricao='$descricao', preco=$preco, quantidade=$quantidade, validade=$validade WHERE id=$id";
     if ($conn->query($sql)) {
-        header('Location: produtos.php'); exit;
+        header('Location: ../produtos.php'); exit;
     } else {
         $error = $conn->error;
     }
 }
-include("../includes/header.php");
+include("../../includes/header.php");
 ?>
 <div class="d-flex justify-content-between align-items-center">
     <h3>Produtos</h3>
     <div>
-        <a class="btn btn-secondary" href="../pages/produtos/exportar_produtos.php ">
+        <a class="btn btn-secondary" href="exportar_produtos.php">
             <i class="bi bi-download"></i> Exportar CSV
         </a>
-        <a class="btn btn-success" href="adicionar_produto.php">
+        <a class="btn btn-success" href="../adicionar_produto.php">
             <i class="bi bi-plus-lg"></i> Novo
-        </a>
         </a>
         <a class="btn btn-success" href="../dashboard.php">
             <i class="bi bi-plus-lg"></i>Menu
-        </a>
-        <a class="btn btn-success" href="../deletar_produto.php?id=<?= $produto['id'] ?>">
-            <i class="bi bi-plus-lg"></i> deletar
-        </a>
-        <a class="btn btn-success" href="../editar_produto.php?id=<?= $produto['id'] ?>">
-            <i class="bi bi-plus-lg"></i> Editar
         </a>
     </div>
 </div>
@@ -56,7 +49,7 @@ include("../includes/header.php");
             <div class="mb-3">
                 <label class="form-label">Descrição</label>
                 <textarea class="form-control"
-                    name="descricao"><?= htmlspecialchars($produto['descricao']) ?></textarea>
+                    name="descricao"><?= htmlspecialchars($produto['descricao'] ?? '') ?></textarea>
             </div>
             <div class="mb-3">
                 <label class="form-label">Preço</label>
@@ -69,12 +62,12 @@ include("../includes/header.php");
                     required>
             </div>
             <div class="mb-3">
-                <label class="form-label">Validade</label>
-                <input class="form-control" name="validade" type="date" required>
+                <label class="form-label">Validade (opcional)</label>
+                <input class="form-control" name="validade" type="date" value="<?= $produto['validade'] ?>">
             </div>
             <button class="btn btn-primary">Salvar</button>
-            <a class="btn btn-secondary" href="produtos.php">Voltar</a>
+            <a class="btn btn-secondary" href="../produtos.php">Voltar</a>
         </form>
     </div>
 </div>
-<?php include("../includes/footer.php"); ?>
+<?php include("../../includes/footer.php"); ?>

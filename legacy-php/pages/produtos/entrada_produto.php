@@ -85,25 +85,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $acao =
         "Entrada";
 
+        $descricao =
+        "Entrada de $qtd_entrada unidade(s)";
+
         $log =
         $conn->prepare("
             INSERT INTO historico
             (
                 usuario,
                 produto_nome,
-                acao
+                acao,
+                descricao
             )
-            VALUES (?, ?, ?)
+            VALUES (?, ?, ?, ?)
         ");
 
         $log->bind_param(
-            "sss",
+            "ssss",
             $usuario,
             $produto_nome,
-            $acao
+            $acao,
+            $descricao
         );
 
         $log->execute();
+
+        $mov =
+        $conn->prepare("
+            INSERT INTO entradas_produtos
+            (produto_id, quantidade, usuario_id)
+            VALUES (?, ?, ?)
+        ");
+
+        $mov->bind_param(
+            "iii",
+            $produto_id,
+            $qtd_entrada,
+            $_SESSION['user_id']
+        );
+
+        $mov->execute();
 
         $success =
         "Entrada registrada com sucesso!";

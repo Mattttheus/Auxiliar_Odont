@@ -1,5 +1,7 @@
-﻿<?php 
-if (session_status() === PHP_SESSION_NONE) session_start(); 
+<?php 
+if (session_status() === PHP_SESSION_NONE) session_start();
+// Raiz da versão antiga, calculada para os links valerem em qualquer tela e endereço.
+$base = substr($_SERVER['SCRIPT_NAME'], 0, strrpos($_SERVER['SCRIPT_NAME'], '/pages/'));
 ?>
 <!doctype html>
 <html lang="pt-br">
@@ -10,7 +12,7 @@ if (session_status() === PHP_SESSION_NONE) session_start();
     <title>Auxiliar Odont - Controle de Estoque</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="/Auxiliar_Odont/assets/css/custom.css" rel="stylesheet">
+    <link href="<?= $base ?>/../assets/css/custom.css" rel="stylesheet">
 </head>
 
 <body class="theme-light">
@@ -19,12 +21,12 @@ if (session_status() === PHP_SESSION_NONE) session_start();
 
     <div class="sidebar" id="sidebarMenu">
         <h4><i class="bi bi-box-seam"></i> Auxiliar Odont</h4>
-        <a href="/Auxiliar_Odont/pages/dashboard.php"><i class="bi bi-house-door"></i> Dashboard</a>
-        <a href="/Auxiliar_Odont/pages/produtos.php"><i class="bi bi-box"></i> Produtos</a>
-        <a href="/Auxiliar_Odont/pages/usuarios/gerenciar_usuarios.php"><i class="bi bi-people"></i> Usuários</a>
-        <a href="/Auxiliar_Odont/pages/historico/historico_saidas.php"><i class="bi bi-clock-history"></i> Histórico</a>
-        <a href="/Auxiliar_Odont/pages/produtos/entrada_produto.php"><i class="bi bi-box-arrow-in-down"></i> Entrada</a>
-        <a href="/Auxiliar_Odont/pages/produtos/saida_produto.php"><i class="bi bi-box-arrow-up"></i> Saída</a>
+        <a href="<?= $base ?>/pages/dashboard.php"><i class="bi bi-house-door"></i> Dashboard</a>
+        <a href="<?= $base ?>/pages/produtos.php"><i class="bi bi-box"></i> Produtos</a>
+        <a href="<?= $base ?>/pages/usuarios/gerenciar_usuarios.php"><i class="bi bi-people"></i> Usuários</a>
+        <a href="<?= $base ?>/pages/historico/historico_saidas.php"><i class="bi bi-clock-history"></i> Histórico</a>
+        <a href="<?= $base ?>/pages/produtos/entrada_produto.php"><i class="bi bi-box-arrow-in-down"></i> Entrada</a>
+        <a href="<?= $base ?>/pages/produtos/saida_produto.php"><i class="bi bi-box-arrow-up"></i> Saída</a>
 
         <hr />
         <div class="px-3 d-flex flex-column gap-2">
@@ -42,7 +44,7 @@ if (session_status() === PHP_SESSION_NONE) session_start();
             </div>
         </div>
         <hr />
-        <a href="/Auxiliar_Odont/logout.php"><i class="bi bi-box-arrow-right"></i> Sair</a>
+        <a href="<?= $base ?>/logout.php"><i class="bi bi-box-arrow-right"></i> Sair</a>
     </div>
 
     <script>
@@ -94,28 +96,30 @@ if (session_status() === PHP_SESSION_NONE) session_start();
         }
     });
 
+    const BASE = <?= json_encode($base) ?>;
+
     function handleVoiceCommand(text) {
         if (text.includes('dashboard') || text.includes('painel')) {
-            window.location.href = '/Auxiliar_Odont/pages/dashboard.php';
+            window.location.href = BASE + '/pages/dashboard.php';
             return;
         }
         if (text.includes('produto') || text.includes('produtos')) {
             if (text.includes('vencid') || text.includes('vencidos') || text.includes('vencimento')) {
-                window.location.href = '/Auxiliar_Odont/pages/produtos/listar_produtos.php?filter=vencidos';
+                window.location.href = BASE + '/pages/produtos.php?filter=vencidos';
             } else if (text.includes('próximo') || text.includes('proximo') || text.includes('perto')) {
-                window.location.href = '../Auxiliar_Odont/pages/produtos/listar_produtos.php?filter=prestes';
+                window.location.href = BASE + '/pages/produtos.php?filter=prestes';
             } else {
-                window.location.href = '../Auxiliar_Odont/pages/produtos/listar_produtos.php';
+                window.location.href = BASE + '/pages/produtos.php';
             }
             return;
         }
         if (text.includes('usuário') || text.includes('usuario') || text.includes('usuários')) {
-            window.location.href = '../Auxiliar_Odont/pages/usuarios/gerenciar_usuarios.php';
+            window.location.href = BASE + '/pages/usuarios/gerenciar_usuarios.php';
             return;
         }
 
         if (text.includes('sair') || text.includes('fechar')) {
-            window.location.href = '../Auxiliar_Odont/logout.php';
+            window.location.href = BASE + '/logout.php';
             return;
         }
 

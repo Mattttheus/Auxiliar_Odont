@@ -2,7 +2,7 @@
 session_start();
 
 if (!isset($_SESSION['usuario']) || ($_SESSION['role'] ?? '') !== 'admin') {
-    header("Location: ../../login.php");
+    header("Location: ../login.php");
     exit;
 }
 
@@ -17,8 +17,8 @@ $id = intval($_GET['id']);
 
 // Não permitir excluir o próprio usuário
 if (
-    isset($_SESSION['usuario_id']) &&
-    $id == $_SESSION['usuario_id']
+    isset($_SESSION['user_id']) &&
+    $id == $_SESSION['user_id']
 ) {
     header("Location: gerenciar_usuarios.php");
     exit;

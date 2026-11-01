@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 session_start();
 include("../config/conexao.php");
 
@@ -11,7 +11,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     if ($res && $res->num_rows === 1) {
         $u = $res->fetch_assoc();
 
-        if (password_verify($senha, $u["senha"]) || $senha === $u["senha"]) {
+        if (password_verify($senha, $u["senha"]) && !$u["ativo"]) {
+            $error = "Conta desativada ou aguardando aprovação. Fale com um administrador.";
+        } elseif (password_verify($senha, $u["senha"])) {
             $_SESSION["usuario"] = $u["nome"];
             $_SESSION["user_id"] = $u["id"];
             $_SESSION["role"] = $u["role"];
@@ -199,6 +201,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             <div class="alert">
                 <?= $error ?>
             </div>
+            <?php elseif(isset($_GET['cadastro'])): ?>
+            <div class="alert">
+                Cadastro enviado. Um administrador precisa aprovar o seu acesso.
+            </div>
             <?php endif; ?>
 
             <form method="POST">
@@ -225,6 +231,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 </button>
 
             </form>
+
+            <p style="text-align:center;margin-top:18px">
+                <a href="registro.php" style="color:#fff">Criar conta</a>
+            </p>
         </div>
     </div>
 

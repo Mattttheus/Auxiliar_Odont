@@ -2,7 +2,7 @@
 session_start();
 
 if (!isset($_SESSION['usuario']) || ($_SESSION['role'] ?? '') !== 'admin') {
-    header("Location: ../../login.php");
+    header("Location: ../login.php");
     exit;
 }
 
@@ -37,6 +37,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $role  = $_POST['role'];
     $ativo = intval($_POST['ativo']);
     $senha = trim($_POST['senha']);
+
+    // O próprio perfil e o status ficam como estão, para o admin não perder o acesso por engano.
+    if ($id === intval($_SESSION['user_id'] ?? 0)) {
+        $role = $usuario['role'];
+        $ativo = (int) $usuario['ativo'];
+    }
 
     // Atualizar sem trocar senha
     if (empty($senha)) {

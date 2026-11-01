@@ -1,6 +1,6 @@
 <?php
 session_start();
-if (!isset($_SESSION['usuario'])) {
+if (!isset($_SESSION['usuario']) || ($_SESSION['role'] ?? '') !== 'admin') {
     header('Location: ../login.php');
     exit;
 }
@@ -31,7 +31,7 @@ $stmt->bind_param("i", $id);
 
 if ($stmt->execute()) {
     // Aqui você pode adicionar o registro no histórico de exclusões
-    echo "<script>alert('Produto \"{$produto['nome']}\" excluído com sucesso!'); window.location='listar_produtos.php';</script>";
+    echo "<script>alert('Produto excluído com sucesso!'); window.location='listar_produtos.php';</script>";
 } else {
     echo "<script>alert('Erro ao excluir o produto.'); window.location='listar_produtos.php';</script>";
 }

@@ -2,7 +2,7 @@
 session_start();
 
 if (!isset($_SESSION['usuario'])) {
-    header('Location: ../../login.php');
+    header('Location: ../login.php');
     exit;
 }
 
@@ -20,10 +20,10 @@ $sqlHistorico = "
     SELECT
         h.id,
 
-        COALESCE(u.nome, 'Usuário removido')
+        COALESCE(u.nome, h.usuario, 'Usuário removido')
             AS usuario_nome,
 
-        COALESCE(p.nome, 'Produto removido')
+        COALESCE(p.nome, h.produto_nome, 'Produto removido')
             AS produto_nome,
 
         h.acao,
@@ -61,7 +61,7 @@ $sqlSaidas = "
 
         COALESCE(
             u.nome,
-            'Usuário removido'
+            IF(s.observacao LIKE 'Importado da planilha%', 'Importação da planilha', 'Usuário removido')
         ) AS usuario_nome
 
     FROM saidas_produtos s

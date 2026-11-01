@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 session_start();
 
 if (!isset($_SESSION["usuario"])) {
@@ -29,9 +29,9 @@ while ($r = $res->fetch_assoc()) {
     $quantidades[] = (int)$r["quantidade"];
     $valores[] = (float)$r["preco"] * (int)$r["quantidade"];
 
-    $dias = (strtotime($r["validade"]) - time()) / 86400;
+    $dias = $r["validade"] ? (strtotime($r["validade"]) - time()) / 86400 : null;
 
-    if ($dias >= 0 && $dias <= 7) {
+    if ($dias !== null && $dias >= 0 && $dias <= 7) {
         $produtos_validade[] = $r["nome"];
         $qtd_validade[] = (int)$r["quantidade"];
     }
@@ -99,7 +99,7 @@ include("../includes/header.php");
         </div>
 
         <div class="text-end">
-            <a href="/Auxiliar_Odont/pages/produtos/listar_produtos.php?filter=vencidos"
+            <a href="produtos.php?filter=vencidos"
                class="btn btn-light mb-2">
                 Ver detalhes
             </a>
@@ -139,7 +139,7 @@ include("../includes/header.php");
         </div>
 
         <div class="text-end">
-            <a href="/Auxiliar_Odont/pages/produtos/listar_produtos.php?filter=prestes"
+            <a href="produtos.php?filter=prestes"
                class="btn btn-light mb-2">
                 Ver detalhes
             </a>
@@ -210,6 +210,7 @@ include("../includes/header.php");
 
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 
 const produtos = <?= json_encode($produtos) ?>;

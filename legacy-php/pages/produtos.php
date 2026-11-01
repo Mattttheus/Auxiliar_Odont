@@ -25,7 +25,7 @@ switch ($filtro) {
         break;
 
     case 'baixo':
-        $sql .= " WHERE quantidade <= 5";
+        $sql .= " WHERE quantidade <= estoque_minimo";
         break;
 }
 
@@ -57,7 +57,7 @@ $totalBaixo =
 $conn->query("
 SELECT COUNT(*) c
 FROM produtos
-WHERE quantidade <= 5
+WHERE quantidade <= estoque_minimo
 ")->fetch_assoc()['c'];
 
 include("../includes/header.php");
@@ -152,14 +152,14 @@ body{
         <div class="d-flex gap-2">
 
             <a class="btn btn-secondary btn-custom"
-               href="exportar_produtos.php">
+               href="produtos/exportar_produtos.php">
 
                 <i class="bi bi-download"></i>
                 CSV
             </a>
 
             <a class="btn btn-success btn-custom"
-               href="editar_produto.php">
+               href="adicionar_produto.php">
 
                 <i class="bi bi-plus-lg"></i>
                 Novo Produto
@@ -296,12 +296,18 @@ body{
 
                     <?php
                         $hoje = strtotime(date('Y-m-d'));
-                        $validade = strtotime($p['validade']);
+                        $validade = $p['validade'] ? strtotime($p['validade']) : null;
 
                         $dias =
-                        ($validade - $hoje) / 86400;
+                        $validade ? ($validade - $hoje) / 86400 : null;
 
-                        if($dias < 0){
+                        if($dias === null){
+                            $status =
+                            '<span class="badge bg-secondary badge-status">
+                            Sem validade
+                            </span>';
+                        }
+                        elseif($dias < 0){
                             $status =
                             '<span class="badge bg-danger badge-status">
                             Vencido
@@ -329,6 +335,10 @@ body{
 
                         <td class="fw-semibold">
                             <?= htmlspecialchars($p['nome']) ?>
+                            <br>
+                            <small class="text-muted fw-normal">
+                                <?= htmlspecialchars(implode(' · ', array_filter([$p['codigo_barras'], $p['categoria']]))) ?>
+                            </small>
                         </td>
 
                         <td>
@@ -336,21 +346,24 @@ body{
                             <?= number_format($p['preco'],2,',','.') ?>
                         </td>
 
-                        <td class="<?= $p['quantidade'] <= 5 ? 'low-stock' : '' ?>">
+                        <td class="<?= $p['quantidade'] <= $p['estoque_minimo'] ? 'low-stock' : '' ?>">
 
                             <?= $p['quantidade'] ?>
 
-                            <?php if($p['quantidade'] <= 5): ?>
+                            <?php if($p['quantidade'] <= $p['estoque_minimo']): ?>
                                 <i class="bi bi-exclamation-circle-fill"></i>
                             <?php endif; ?>
+
+                            <br>
+                            <small class="text-muted fw-normal">
+                                <?= htmlspecialchars($p['unidade'] ?? '') ?>
+                                (mín. <?= $p['estoque_minimo'] ?>)
+                            </small>
 
                         </td>
 
                         <td>
-                            <?= date(
-                                'd/m/Y',
-                                strtotime($p['validade'])
-                            ) ?>
+                            <?= $validade ? date('d/m/Y', $validade) : '-' ?>
                         </td>
 
                         <td>
@@ -360,7 +373,7 @@ body{
                         <td>
 
                             <a
-                                href="editar_produto.php?id=<?= $p['id'] ?>"
+                                href="produtos/editar_produto.php?id=<?= $p['id'] ?>"
                                 class="btn btn-info btn-sm text-white">
 
                                 <i class="bi bi-pencil-square"></i>

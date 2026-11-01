@@ -1,8 +1,18 @@
-﻿CREATE DATABASE IF NOT EXISTS estoque_db
+-- Banco LOCAL da versão antiga em PHP (legacy-php), no MySQL do WAMP.
+-- O sistema atual usa o Supabase e não depende deste banco.
+--
+-- Como usar: phpMyAdmin (http://localhost/phpmyadmin/) > Importar > este arquivo.
+-- Pode ser importado de novo: não apaga nem altera o que já existe.
+--
+-- O banco é próprio porque o estoque_db deste computador pertence ao Auxiliar_Obras.
+-- Não há usuário padrão, pois este arquivo é público: quem se cadastrar primeiro em
+-- pages/registro.php vira administrador.
+
+CREATE DATABASE IF NOT EXISTS auxiliar_odont
 CHARACTER SET utf8mb4
 COLLATE utf8mb4_unicode_ci;
 
-USE estoque_db;
+USE auxiliar_odont;
 
 -- ======================================
 -- TABELA DE USUÁRIOS
@@ -32,7 +42,13 @@ CREATE TABLE IF NOT EXISTS produtos (
 
     quantidade INT DEFAULT 0,
 
-    validade DATE NOT NULL,
+    unidade VARCHAR(30) NULL,
+
+    estoque_minimo INT NOT NULL DEFAULT 5,
+
+    categoria VARCHAR(60) NULL,
+
+    validade DATE NULL,
 
     codigo_qr VARCHAR(255),
 
@@ -41,7 +57,10 @@ CREATE TABLE IF NOT EXISTS produtos (
     criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
     atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    ON UPDATE CURRENT_TIMESTAMP
+    ON UPDATE CURRENT_TIMESTAMP,
+
+    INDEX idx_produto_nome (nome),
+    INDEX idx_validade (validade)
 );
 
 -- ======================================
@@ -102,19 +121,27 @@ CREATE TABLE IF NOT EXISTS saidas_produtos (
 -- HISTÓRICO GERAL
 -- ======================================
 
+-- usuario e produto_nome guardam os nomes da época: as telas de entrada e saída
+-- registram por nome, e o registro continua legível se o produto for excluído.
 CREATE TABLE IF NOT EXISTS historico (
 
     id INT AUTO_INCREMENT PRIMARY KEY,
 
     usuario_id INT NULL,
 
+    usuario VARCHAR(100) NULL,
+
     produto_id INT NULL,
+
+    produto_nome VARCHAR(100) NULL,
 
     acao VARCHAR(50) NOT NULL,
 
     descricao TEXT,
 
     data_acao DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+    INDEX idx_historico_data (data_acao),
 
     FOREIGN KEY (usuario_id)
         REFERENCES usuarios(id)
@@ -123,35 +150,4 @@ CREATE TABLE IF NOT EXISTS historico (
     FOREIGN KEY (produto_id)
         REFERENCES produtos(id)
         ON DELETE SET NULL
-);
-
--- ======================================
--- ÍNDICES
--- ======================================
-
-CREATE INDEX idx_produto_nome
-ON produtos(nome);
-
-CREATE INDEX idx_validade
-ON produtos(validade);
-
-CREATE INDEX idx_historico_data
-ON historico(data_acao);
-
--- ======================================
--- USUÁRIO ADMIN PADRÃO
--- senha: 123456
--- hash gerado pelo password_hash()
--- ======================================
-
-INSERT IGNORE INTO usuarios (
-    nome,
-    email,
-    senha,
-    role
-) VALUES (
-    'Administrador',
-    'admin@local.com',
-    '$2y$10$wH8J8KQm5vK4gZ7xJYzQ6e3h0z6P3GQ8N9Xz9k7k2vY5lG3mQ7W2K',
-    'admin'
 );

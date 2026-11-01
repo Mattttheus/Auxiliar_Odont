@@ -1,4 +1,6 @@
 <?php
+session_start();
+if (!isset($_SESSION['usuario'])) { header('Location: ../login.php'); exit; }
 include('../../config/conexao.php');
 header('Content-Type: text/csv; charset=utf-8');
 header('Content-Disposition: attachment; filename=produtos_export.csv');

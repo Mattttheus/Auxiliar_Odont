@@ -18,31 +18,21 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $role = $conn->real_escape_string($_POST['role']);
         }
     }
-    $sql = "INSERT INTO usuarios (nome, email, senha, role) VALUES ('$nome', '$email', '$senha', '$role')";
-    if ($conn->query($sql)) {
-        header('Location: login.php');
+    // Só o primeiro usuário e os criados por um admin entram direto: os demais aguardam aprovação.
+    $criadoPorAdmin = isset($_SESSION['usuario']) && $_SESSION['role'] === 'admin';
+    $ativo = (!$hasUsers || $criadoPorAdmin) ? 1 : 0;
+    $sql = "INSERT INTO usuarios (nome, email, senha, role, ativo) VALUES ('$nome', '$email', '$senha', '$role', $ativo)";
+    if (strlen($_POST['senha']) < 8) {
+        $error = "A senha deve ter pelo menos 8 caracteres.";
+    } elseif ($conn->query($sql)) {
+        header($ativo ? 'Location: login.php' : 'Location: login.php?cadastro=pendente');
         exit;
     } else {
-        $error = $conn->error;
+        $error = $conn->errno === 1062 ? "Este e-mail já está cadastrado." : $conn->error;
     }
 }
 include("../includes/header.php");
 ?>
-<div class="d-flex justify-content-between align-items-center">
-    <h3>Produtos</h3>
-    <div>
-        <a class="btn btn-secondary" href="exportar_produtos.php">
-            <i class="bi bi-download"></i> Exportar CSV
-        </a>
-        <a class="btn btn-success" href="editar_produto.php">
-            <i class="bi bi-plus-lg"></i> Editar
-        </a>
-        </a>
-        <a class="btn btn-success" href="dashboard.php">
-            <i class="bi bi-plus-lg"></i>Menu
-        </a>
-    </div>
-</div>
 <div class="card">
   <div class="card-body">
     <h4 class="card-title">Cadastro de Usuário</h4>
@@ -60,7 +50,7 @@ include("../includes/header.php");
       </div>
       <div class="mb-3">
         <label class="form-label">Senha</label>
-        <input type="password" class="form-control" name="senha" required>
+        <input type="password" class="form-control" name="senha" minlength="8" required>
       </div>
       <?php if ($hasUsers && isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
       <div class="mb-3">
@@ -72,6 +62,7 @@ include("../includes/header.php");
       </div>
       <?php endif; ?>
       <button class="btn btn-primary">Cadastrar</button>
+      <a class="btn btn-link" href="login.php">Voltar para o login</a>
     </form>
   </div>
 </div>
