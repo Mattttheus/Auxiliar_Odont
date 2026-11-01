@@ -1,33 +1,35 @@
 // Sidebar, tema, comando de voz e beep sonoro (substitui includes/header.php e footer.php).
 import { logout } from "./auth.js";
 import { can, roleLabel, roleBadgeClass } from "./permissions.js";
-import { supabase } from "./supabase-init.js";
-import { getConfiguracoes, contarCadastrosPendentes } from "./data.js";
+import { getConfiguracoes, contarCadastrosPendentes, listProdutos } from "./data.js";
 import { calcularAlertas } from "./alertas.js";
 import { escapeHtml } from "./utils.js";
 
 const MENU_ITEMS = [
     { href: "dashboard.html", icon: "bi-house-door", label: "Dashboard", perm: null },
-    { href: "produtos.html", icon: "bi-box", label: "Produtos", perm: "produtos_view" },
-    { href: "movimentar.html", icon: "bi-qr-code-scan", label: "Movimentar (QR)", perm: "movimentar" },
-    { href: "caixa.html", icon: "bi-cash-register", label: "Caixa (PDV)", perm: "saida" },
-    { href: "compras.html", icon: "bi-cart-check", label: "Lista de Compras", perm: "compras" },
-    { href: "etiquetas.html", icon: "bi-qr-code", label: "Etiquetas QR", perm: "etiquetas" },
-    { href: "historico.html", icon: "bi-clock-history", label: "Histórico", perm: "historico" },
-    { href: "usuarios.html", icon: "bi-people", label: "Usuários", perm: "usuarios" },
-    { href: "controle.html", icon: "bi-shield-check", label: "Controle e Curva ABC", perm: "controle" },
-    { href: "sobre.html", icon: "bi-info-circle", label: "Sobre o projeto", perm: null }
+    { grupo: "Gestão de estoque", href: "produtos.html", icon: "bi-box", label: "Produtos", perm: "produtos_view" },
+    { grupo: "Gestão de estoque", href: "movimentar.html", icon: "bi-qr-code-scan", label: "Movimentar (QR)", perm: "movimentar" },
+    { grupo: "Gestão de estoque", href: "caixa.html", icon: "bi-cash-stack", label: "Caixa (PDV)", perm: "saida" },
+    { grupo: "Gestão de estoque", href: "compras.html", icon: "bi-cart-check", label: "Lista de Compras", perm: "compras" },
+    { grupo: "Gestão de estoque", href: "etiquetas.html", icon: "bi-qr-code", label: "Etiquetas QR", perm: "etiquetas" },
+    { grupo: "Gestão de estoque", href: "historico.html", icon: "bi-clock-history", label: "Histórico", perm: "historico" },
+    { grupo: "Administração", href: "controle.html", icon: "bi-shield-check", label: "Controle e Curva ABC", perm: "controle" },
+    { grupo: "Administração", href: "usuarios.html", icon: "bi-people", label: "Usuários", perm: "usuarios" },
+    { grupo: "Sistema", href: "sobre.html", icon: "bi-info-circle", label: "Sobre o projeto", perm: null }
 ];
 
 export function renderShell(activePage, user) {
     const shell = document.getElementById("app-shell");
     if (!shell) return;
 
+    let grupoAtual = null;
     const links = MENU_ITEMS
         .filter(item => !item.perm || can(user, item.perm))
         .map(item => {
             const isActive = item.href.startsWith(activePage) ? " active" : "";
-            return `<a href="${item.href}" class="${isActive}"><i class="bi ${item.icon}"></i> ${item.label}</a>`;
+            const titulo = item.grupo && item.grupo !== grupoAtual ? `<div class="sidebar-grupo">${item.grupo}</div>` : "";
+            grupoAtual = item.grupo || grupoAtual;
+            return `${titulo}<a href="${item.href}" class="${isActive}"><i class="bi ${item.icon}"></i> ${item.label}</a>`;
         }).join("");
 
     const saudacao = user ? `
@@ -83,13 +85,12 @@ async function carregarAlertasSidebar(user) {
     const box = document.getElementById("sidebarAlertas");
     if (!box) return;
     try {
-        const [{ data, error }, cfg, pendentes] = await Promise.all([
-            supabase.from("produtos").select("id, quantidade, estoque_minimo, validade"),
+        const [produtos, cfg, pendentes] = await Promise.all([
+            listProdutos(),
             getConfiguracoes(),
             can(user, "usuarios") ? contarCadastrosPendentes() : 0
         ]);
-        if (error) throw error;
-        const a = calcularAlertas(data, cfg);
+        const a = calcularAlertas(produtos, cfg);
         if (a.total === 0 && pendentes === 0) {
             box.innerHTML = `<div class="sidebar-alertas ok"><i class="bi bi-check-circle"></i> Estoque sem alertas</div>`;
             return;
@@ -103,7 +104,8 @@ async function carregarAlertasSidebar(user) {
           ${chip("usuarios.html", "chip-warning", "bi-person-plus", pendentes, "cadastro(s) aguardando")}
           ${chip("produtos.html?filter=vencidos", "chip-danger", "bi-exclamation-octagon", a.vencidos.length, "vencido(s)")}
           ${chip("produtos.html?filter=prestes", "chip-warning", "bi-hourglass-split", a.vencendo.length, `vence(m) em ${cfg.dias_alerta_validade}d`)}
-          ${chip(destinoBaixo, "chip-info", "bi-graph-down-arrow", a.baixo.length, "abaixo do mínimo")}
+          ${chip(destinoBaixo, "chip-danger", "bi-exclamation-octagon", a.repor.length, "para repor")}
+          ${chip(destinoBaixo, "chip-warning", "bi-exclamation-triangle", a.atencao.length, "em atenção")}
         </div>`;
     } catch (err) {
         console.warn("Alertas da sidebar indisponíveis", err);

@@ -1,43 +1,60 @@
-﻿# Auxiliar Odont — Sistema de Controle de Estoque
+# Auxiliar Odont — Sistema de Controle de Estoque
 
-Aplicação 100% estática (HTML + CSS + JavaScript) hospedada no **GitHub Pages**, usando
-**Supabase (Authentication + Postgres)** como backend de dados — já que o GitHub Pages
-não executa PHP nem hospeda MySQL. A versão original em PHP/MySQL foi preservada em
-[legacy-php/](legacy-php/) apenas como referência histórica.
+Sistema único de gestão de estoque, que roda **na rede local do consultório**: telas em HTML, CSS e
+JavaScript, API em PHP ([api/](api/)) e banco MySQL, tudo no WAMP deste computador. Não depende de
+serviços externos para guardar dados.
 
-## Endereço oficial
+## Como acessar
 
-**<https://mattttheus.github.io/Auxiliar_Odont/>** é o endereço fixo do sistema, igual para
-todos, em qualquer rede. Não há IP para configurar: o GitHub Pages não oferece IP exclusivo,
-e o IP do computador local (WAMP) só funciona na mesma rede, com o computador ligado e sem
-HTTPS, o que também impede a câmera de ler QR Codes.
+| Onde | Endereço |
+|---|---|
+| Qualquer aparelho no Wi-Fi do consultório (`192.168.1.x`) | <http://192.168.1.51/Auxiliar_Odont/> |
+| Banco de dados, só neste computador | <http://localhost/phpmyadmin/> (usuário `root`, sem senha, servidor **MySQL**) |
 
-**O site abre, mas ninguém consegue entrar?** Veja se o projeto está pausado em
-<https://supabase.com/dashboard> e clique em *Resume project*. O plano gratuito pausa o
-projeto após uma semana sem atividade, e o endereço do banco deixa de existir enquanto isso. A rotina
-[manter-supabase-ativo.yml](.github/workflows/manter-supabase-ativo.yml) evita a pausa
-consultando o banco a cada 3 dias e avisa por e-mail se ele não responder.
+O WAMP precisa estar ligado. O IP `192.168.1.51` é o IP fixo do Wi-Fi deste computador; se mudar,
+atualize a mensagem de erro em [assets/js/api.js](assets/js/api.js).
 
-**Senha do administrador:** ninguém consegue vê-la, pois o Supabase guarda só uma versão
-criptografada, e ela nunca deve ficar no site ou neste repositório, que são públicos. Para saber
-quem é o administrador, rode no SQL Editor `select nome, email from usuarios where role = 'admin';`.
-Para criar uma senha nova, use *Esqueci minha senha* na tela de login.
+O sistema funciona sem internet: as bibliotecas estão em [assets/vendor/](assets/vendor/) (Bootstrap 5.3.2,
+Bootstrap Icons 1.10.5, Chart.js 4.6.1, qrcode-generator 1.4.4 e html5-qrcode 2.3.8, todas de licença MIT).
 
-## Acesso na rede local (WAMP)
+Limitação: a câmera do navegador só funciona com HTTPS ou em `localhost`. Pela rede, use um leitor USB de
+código de barras ou digite o código.
 
-Com o WAMP ligado, os aparelhos da rede `192.168.1.x` acessam pelo IP fixo do Wi-Fi deste computador:
+## Instalar em outro computador
 
-| Endereço | O que é | Banco |
-|---|---|---|
-| `http://192.168.1.51/Auxiliar_Odont/` | Sistema atual, com curva ABC, níveis e QR Code | Supabase: precisa de internet e do projeto ativo |
-| `http://192.168.1.51/Auxiliar_Odont/legacy-php/` | Versão antiga em PHP, mais simples, com níveis admin e user | MySQL local: funciona sem internet |
+1. Instale o WAMP e copie esta pasta para `www/Auxiliar_Odont`.
+2. No phpMyAdmin (servidor MySQL), importe [banco/auxiliar_odont.sql](banco/auxiliar_odont.sql) e depois
+   [banco/dados_planilha.sql](banco/dados_planilha.sql), com o estoque da planilha.
+3. Abra o sistema e clique em **Criar conta**: a primeira conta vira administrador, e as próximas aguardam a
+   aprovação dele em **Usuários**.
 
-O banco da versão antiga é o `auxiliar_odont`, visível em <http://localhost/phpmyadmin/> (usuário `root`, sem
-senha, acessível só deste computador). Para recriá-lo, importe
-[estoque_db.sql](legacy-php/database/estoque_db.sql) e depois
-[auxiliar_odont_dados_planilha.sql](legacy-php/database/auxiliar_odont_dados_planilha.sql), com os 96 produtos e
-as saídas da planilha. Os dois bancos não trocam dados entre si. O `estoque_db` deste computador é do projeto
-Auxiliar_Obras e não deve ser alterado.
+Se a planilha mudar antes da importação, gere os dados de novo com `python banco/gerar_dados_planilha.py`.
+
+## Gestão de estoque, a partir da planilha
+
+O sistema opera com a mesma lógica de [Controle_de_Estoque.xlsx](Controle_de_Estoque.xlsx):
+
+| Planilha | No sistema |
+|---|---|
+| Quantidade atual = estoque inicial + entradas − saídas | Cada movimentação atualiza o saldo; **Controle e Curva ABC → Conferência de saldo** recalcula e aponta diferenças |
+| Status: abaixo do mínimo é 🔴 Repor, igual ao mínimo é 🟡 Atenção, acima é 🟢 Normal | Produtos, Dashboard, Curva ABC, menu lateral e Lista de Compras |
+| Dashboard: totais por status e entradas e saídas por mês | Dashboard, com gráfico mensal e totais por status |
+| Itens que precisam de reposição | Dashboard e Lista de Compras |
+| Prefixo do código por categoria (01 Dentística, 02 Cirurgia, 03 Periodontia, 04 Endodontia, 05 Consumíveis, 06 Prótese, 07 Instrumental) | Produto novo sem código recebe o próximo da categoria, como `01-033` |
+| Lista de unidades | Sugestões no cadastro de produtos |
+
+## Funcionalidades
+
+| Menu | O que faz |
+|---|---|
+| **Produtos** | Cadastro, filtros por status e validade, lotes, CSV |
+| **Movimentar (QR)** | Entrada com lote e validade, saída consumindo primeiro o lote que vence antes (FEFO), por leitor ou código |
+| **Caixa (PDV)** | Venda com carrinho: todos os itens saem juntos, ou nenhum |
+| **Lista de Compras** | Sugestão por estoque mínimo, consumo real e lotes vencendo, listas salvas, recebimento que dá entrada no estoque |
+| **Etiquetas QR** | Impressão de etiquetas com código, nome e localização |
+| **Histórico** | Todas as ações e saídas, com filtros e CSV |
+| **Controle e Curva ABC** (admin) | Curva ABC pelo consumo real, conferência de saldo, troca de nível e ativação de usuários |
+| **Usuários** (admin) | Aprovação de cadastros, criação, edição, exclusão e senha temporária |
 
 ## Níveis de usuário
 
@@ -50,87 +67,19 @@ Auxiliar_Obras e não deve ser alterado.
 | Produtos, entradas, etiquetas QR e salvar/receber compras | Sim | Não | Sim | Não | Não |
 | Usuários, critérios, curva ABC e controle de acesso | Sim | Não | Não | Não | Não |
 
-Internamente, o nível Caixa continua gravado como `vendedor` no banco. O nível Usuário comum
-depende da migração v4.
+As regras valem no servidor ([api/nucleo.php](api/nucleo.php)); [assets/js/permissions.js](assets/js/permissions.js)
+repete a mesma matriz só para decidir o que mostrar na tela. Internamente, o nível Caixa é gravado como `vendedor`.
 
-## Como publicar no GitHub Pages
+## Senhas
 
-1. **Crie um projeto no Supabase** (gratuito): <https://supabase.com/dashboard>
-2. Em **Authentication → Providers → Email**, ative o login por email/senha (e, para
-   agilizar testes, pode desativar "Confirm email" em Authentication → Settings).
-3. Em **SQL Editor**, execute os scripts abaixo **nesta ordem** (New query > colar >
-   Run). Todos são idempotentes — pode rodar de novo sem medo de duplicar dados ou
-   quebrar algo, mesmo que parte já tenha sido aplicada antes:
-   1. [legacy-php/database/supabase_schema.sql](legacy-php/database/supabase_schema.sql)
-      — cria as tabelas (`usuarios`, `produtos`, `entradas_produtos`, `saidas_produtos`,
-      `historico`) e a segurança (RLS) inicial.
-   2. [legacy-php/database/supabase_migration_v2_seguranca_estoque.sql](legacy-php/database/supabase_migration_v2_seguranca_estoque.sql)
-      — garante os níveis de acesso (admin/estoquista/vendedor/dentista), código de
-      barras, colunas de estoque (unidade, estoque mínimo, categoria, validade
-      opcional) e fecha uma falha de segurança em que um usuário podia se
-      autopromover a administrador chamando a API diretamente.
-   3. (Opcional) [legacy-php/database/supabase_dados_planilha_estoque.sql](legacy-php/database/supabase_dados_planilha_estoque.sql)
-      — importa os 96 produtos e o histórico de movimentações da planilha
-      `Controle_de_Estoque.xlsx` para o banco, já com categoria e estoque mínimo
-      preenchidos.
-   4. [legacy-php/database/supabase_migration_v3_relatorio_final.sql](legacy-php/database/supabase_migration_v3_relatorio_final.sql)
-      — alinha o banco ao Relatório Final do PI3: localização do item, **lotes com
-      validade** (saída FEFO), movimentações transacionais no banco (RPC
-      `registrar_movimentacao`, `registrar_venda`), auditoria automática de
-      cadastro/edição/ajuste/exclusão, **critérios de reposição configuráveis**,
-      **lista de compras automática** (`sugerir_lista_compras`) com listas salvas e
-      recebimento (`receber_lista_compra`), e índices. Sem ela o sistema continua
-      funcionando no modo antigo, mas lotes, listas de compra e critérios ficam
-      indisponíveis (a tela avisa).
-   5. [legacy-php/database/supabase_migration_v4_usuarios.sql](legacy-php/database/supabase_migration_v4_usuarios.sql)
-      — **depois de publicar o site**: nível Usuário comum, telefone e nível solicitado
-      no perfil, aprovação de cadastros garantida no banco, bloqueio de contas inativas
-      pela API e exclusão completa de usuários (`excluir_usuario`).
-4. Em **Settings → API Keys**, copie a **Project URL** e a chave **anon/publishable**
-   (NUNCA a `service_role`/secret) e cole em
-   [assets/js/supabase-config.js](assets/js/supabase-config.js).
-5. Em **Authentication → URL Configuration**, defina **Site URL** como
-   `https://mattttheus.github.io/Auxiliar_Odont/` e adicione
-   `https://mattttheus.github.io/Auxiliar_Odont/**` em **Redirect URLs**. Sem isso, os
-   links de confirmação de e-mail e de nova senha não voltam para o sistema.
-6. Faça commit e push para o branch `main`.
-7. No GitHub, vá em **Settings → Pages** e selecione **Deploy from a branch → main → / (root)**.
-8. Acesse `https://mattttheus.github.io/Auxiliar_Odont/`, cadastre-se em **Criar conta**
-   (o primeiro usuário criado vira administrador automaticamente; a partir do segundo,
-   todo novo cadastro fica aguardando a aprovação de um admin, em **Usuários**).
+As senhas ficam criptografadas no banco e ninguém consegue lê-las. Quem esqueceu pede a um administrador, que gera
+uma senha temporária em **Usuários**; depois a pessoa troca em **Alterar senha**. Nunca coloque senhas neste
+repositório, que é público.
 
-## Funcionalidades (alinhadas ao Relatório Final)
+## Arquivos antigos
 
-| Relatório | Tela / banco |
-|---|---|
-| Entradas e saídas registradas | Produtos, **Movimentar (QR)**, Caixa (PDV): tudo passa pela função `registrar_movimentacao` (uma transação, com histórico e origem) |
-| Lotes e datas de validade | Lote e validade na entrada; saída consome primeiro o lote que vence antes; botão *Lotes* em Produtos |
-| Localização do componente | Campo *Localização* no produto, exibido na leitura do QR e nas etiquetas |
-| QR Code para identificar e movimentar | **Etiquetas QR** (impressão, geração de códigos faltantes) + leitor contínuo com confirmação do item |
-| Problemas de leitura nos testes (reflexo, distância) | Área de leitura menor, código aceito só após leituras repetidas, dica de vinil fosco e aproximação |
-| Alertas de validade e reposição | Menu lateral e Dashboard, com prazo de validade configurável |
-| Lista de compras automática | **Lista de Compras**: estoque mínimo + consumo real + lotes vencendo, critérios ajustáveis (admin), listas salvas, recebimento dá entrada no estoque |
-| Relatórios com análise de dados | Dashboard (movimentações 30 dias, mais consumidos, situação por categoria) e CSV |
-| Precedência do estoque (somente admin) | **Controle e Curva ABC**: classifica todos os produtos em A (até 80% do consumo), B (até 95%) e C pelo consumo real no período, com curva, filtros e CSV. Não exige migração |
-| Controle de acesso (somente admin) | **Controle e Curva ABC**: troca de perfil, ativação/desativação de usuários e matriz do que cada perfil pode fazer. A conta desativada perde o acesso na próxima página aberta |
-| Cadastro e gestão de usuários | **Criar conta** com dados validados (nome completo, e-mail, telefone, nível solicitado, senha forte) e aprovação por um admin; **Usuários** com aprovação, busca, filtros e redefinição de senha; **Esqueci minha senha** e **Alterar senha** para todos |
-
-## Limitações do modelo 100% estático
-
-- **Nunca** coloque a chave `service_role`/secret do Supabase no código do site: o GitHub
-  Pages é público, então qualquer chave no repositório fica visível a qualquer visitante.
-- Criar contas de outros usuários (tela Usuários, admin) exige que o admin esteja logado
-  no navegador; é feito via client Supabase secundário (sem persistir sessão) para não
-  derrubar a sessão do admin.
-- Excluir um usuário remove o login e o perfil. Sem a migração v4, remove só o perfil: a
-  conta de login deve ser removida em *Supabase → Authentication → Users* e, se a pessoa
-  entrar antes disso, volta como cadastro aguardando aprovação.
-- O e-mail de login não pode ser alterado pela tela: o navegador não tem permissão para
-  isso. Altere em *Supabase → Authentication → Users*.
-- Redefinição de senha de terceiros é feita por e-mail (`resetPasswordForEmail`).
-- O banco impede remover, desativar ou rebaixar o **último** administrador ativo, e
-  impede que um usuário comum altere a própria `role`/`ativo` mesmo chamando a API
-  diretamente — essas regras vivem no banco (triggers/policies), não só na tela.
+[legacy-php/](legacy-php/) é a versão original em PHP e os scripts `supabase_*.sql` são da fase em nuvem. Ficam só como
+referência: o endereço antigo redireciona para o sistema atual, e nada disso é usado.
 
 ---
 
@@ -176,7 +125,10 @@ O sistema possui autenticação de usuários, permitindo acesso apenas mediante 
 Existe diferenciação de permissões entre:
 
 - Administrador (admin)
-- Usuário comum (user)
+- Cirurgião-dentista
+- Estoquista
+- Caixa
+- Usuário comum
 
 Isso garante maior segurança e controle das ações realizadas dentro do sistema.
 
@@ -231,28 +183,30 @@ Front-end:
 - Bootstrap 5
 - JavaScript (ES Modules)
 
-Backend/Dados (nuvem):
+Backend/Dados (rede local):
 
-- Supabase Authentication
-- Supabase Postgres (com Row Level Security)
+- API em PHP com sessão no servidor
+- MySQL (WAMP), com transações
 
 Bibliotecas:
 
 - Chart.js (gráficos)
 
-(Versão legada em PHP + MySQL disponível em legacy-php/, mantida apenas como referência.)
-
 1. BANCO DE DADOS
 
 O sistema utiliza um banco de dados MySQL chamado:
 
-estoque_db
+auxiliar_odont
 
 Entre as principais tabelas estão:
 
 - usuarios
 - produtos
-- historico_saida
+- entradas_produtos
+- saidas_produtos
+- lotes
+- historico
+- listas_compra
 
 O banco foi estruturado para garantir integridade e organização das informações.
 
@@ -269,11 +223,8 @@ Os principais diferenciais do sistema são:
 
 Além disso, o sistema pode receber futuras melhorias, como:
 
-- Leitura de QR Code;
-- Código de barras;
-- Controle de validade dos produtos;
-- Notificações de estoque mínimo;
-- Backup automático.
+- Backup automático;
+- Leitura de QR Code pela câmera na rede local, com HTTPS.
 
 1. CONCLUSÃO
 

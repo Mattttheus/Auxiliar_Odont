@@ -1,25 +1,23 @@
-// Define uma nova senha: pelo link de recuperação enviado por e-mail ou, já logado, em "Alterar senha".
-import { supabase } from "./supabase-init.js";
-import { validarSenha, validarConfirmacaoSenha, traduzirErroAuth, marcarCampo } from "./validacao.js";
+// Alterar a própria senha: pede a senha atual para confirmar quem está no computador.
+import { apiPost } from "./api.js";
+import { requireAuth } from "./auth.js";
+import { validarSenha, validarConfirmacaoSenha, marcarCampo } from "./validacao.js";
 
 const form = document.getElementById("senhaForm");
 const errorAlert = document.getElementById("errorAlert");
 const btn = document.getElementById("btnSalvar");
 
-function mostrarErro(msg) {
-    errorAlert.textContent = msg;
-    errorAlert.classList.remove("d-none");
-}
-
 document.getElementById("mostrarSenha").addEventListener("change", (e) => {
-    for (const id of ["senha", "confirmarSenha"]) document.getElementById(id).type = e.target.checked ? "text" : "password";
+    for (const id of ["senhaAtual", "senha", "confirmarSenha"]) document.getElementById(id).type = e.target.checked ? "text" : "password";
 });
 
 form.addEventListener("submit", async (e) => {
     e.preventDefault();
     errorAlert.classList.add("d-none");
+    const atual = document.getElementById("senhaAtual").value;
     const senha = document.getElementById("senha").value;
     const resultados = [
+        marcarCampo("senhaAtual", atual ? null : "Informe a senha atual."),
         marcarCampo("senha", validarSenha(senha)),
         marcarCampo("confirmarSenha", validarConfirmacaoSenha(senha, document.getElementById("confirmarSenha").value))
     ];
@@ -27,25 +25,21 @@ form.addEventListener("submit", async (e) => {
 
     btn.disabled = true;
     try {
-        const { error } = await supabase.auth.updateUser({ password: senha });
-        if (error) throw error;
+        await apiPost("alterar_senha", { senha_atual: atual, senha_nova: senha });
         form.classList.add("d-none");
         document.getElementById("contaAtual").classList.add("d-none");
         document.getElementById("sucesso").classList.remove("d-none");
     } catch (err) {
         console.error(err);
-        mostrarErro(traduzirErroAuth(err));
+        errorAlert.textContent = err.message;
+        errorAlert.classList.remove("d-none");
     } finally {
         btn.disabled = false;
     }
 });
 
-// O getSession só responde depois que o SDK processou o link recebido por e-mail.
-const { data: { session } } = await supabase.auth.getSession();
-if (session) {
-    document.getElementById("contaAtual").textContent = `Conta: ${session.user.email}`;
+const user = await requireAuth();
+if (user) {
+    document.getElementById("contaAtual").textContent = `Conta: ${user.email}`;
     form.classList.remove("d-none");
-} else {
-    mostrarErro("Este link é inválido ou já expirou. Na tela de login, clique em Esqueci minha senha para receber outro.");
-    document.getElementById("linkVoltar").textContent = "Ir para o login";
 }

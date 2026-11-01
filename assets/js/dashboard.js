@@ -4,7 +4,7 @@ import { renderShell } from "./layout.js";
 import { can } from "./permissions.js";
 import { listProdutos, listMovimentacoesDesde, getConfiguracoes } from "./data.js";
 import { formatDateBR, daysUntil, escapeHtml } from "./utils.js";
-import { calcularAlertas, statusProduto } from "./alertas.js";
+import { calcularAlertas, statusEstoque, badgeEstoque, estoqueMinimo } from "./alertas.js";
 
 // Estas constantes precisam existir ANTES de carregarDashboard() ser chamada
 // (ela roda no bloco abaixo, ainda durante o carregamento do módulo).
@@ -36,7 +36,9 @@ async function carregarDashboard() {
     const inicio = new Date();
     inicio.setHours(0, 0, 0, 0);
     inicio.setDate(inicio.getDate() - (janela - 1));
-    const [produtos, movs] = await Promise.all([listProdutos(), listMovimentacoesDesde(inicio)]);
+    // O resumo mensal, como na planilha, precisa do ano inteiro.
+    const inicioAno = new Date(new Date().getFullYear(), 0, 1);
+    const [produtos, movs] = await Promise.all([listProdutos(), listMovimentacoesDesde(inicio < inicioAno ? inicio : inicioAno)]);
 
     const alertas = calcularAlertas(produtos, cfg);
     const limite30 = new Date();
@@ -47,9 +49,9 @@ async function carregarDashboard() {
 
     document.getElementById("statProdutos").textContent = produtos.length;
     document.getElementById("statItens").textContent =
-        `${produtos.reduce((t, p) => t + (Number(p.quantidade) || 0), 0)} unidades em estoque`;
-    document.getElementById("statBaixo").textContent = alertas.baixo.length;
-    document.getElementById("statZerados").textContent = `${alertas.zerados.length} sem estoque`;
+        `${produtos.reduce((t, p) => t + (Number(p.quantidade) || 0), 0)} unidades, ${alertas.normal.length} itens normais`;
+    document.getElementById("statBaixo").textContent = alertas.repor.length;
+    document.getElementById("statZerados").textContent = `${alertas.atencao.length} em atenção, ${alertas.zerados.length} sem estoque`;
     document.getElementById("labelVencendo").textContent = `Vencem em ${cfg.dias_alerta_validade} dias`;
     document.getElementById("statVencendo").textContent = alertas.vencendo.length;
     document.getElementById("statVencidos").textContent = alertas.vencidos.length;
@@ -58,9 +60,62 @@ async function carregarDashboard() {
 
     renderAlertas(alertas, cfg);
     renderVencimentos(produtos, cfg);
+    renderReposicao(produtos);
     chartMovimentacoes(movs30, limite30);
+    chartMensal(movs, inicioAno.getFullYear());
     chartConsumo(movs.filter(m => m.tipo === "saida"), cfg.janela_consumo_dias);
-    chartCategorias(produtos, cfg);
+    chartCategorias(produtos);
+}
+
+/** Lista "Itens que precisam de reposição" da planilha: primeiro Repor, depois Atenção. */
+function renderReposicao(produtos) {
+    const itens = produtos
+        .filter(p => statusEstoque(p).codigo !== "normal")
+        .sort((a, b) => statusEstoque(b).codigo.localeCompare(statusEstoque(a).codigo)
+            || String(a.codigo_barras).localeCompare(String(b.codigo_barras)));
+    document.getElementById("qtdReposicao").textContent = itens.length;
+    document.getElementById("reposicaoBody").innerHTML = itens.map(p => `
+    <tr>
+      <td><small class="text-muted">${escapeHtml(p.codigo_barras || "-")}</small></td>
+      <td>${escapeHtml(p.nome)}</td>
+      <td>${p.quantidade}</td>
+      <td>${estoqueMinimo(p)}</td>
+      <td>${badgeEstoque(p)}</td>
+    </tr>`).join("") || `<tr><td colspan="5" class="text-muted text-center py-3">Nenhum item para reposição.</td></tr>`;
+}
+
+/** Entradas e saídas por mês do ano, como no resumo mensal da planilha. */
+function chartMensal(movs, ano) {
+    const c = COR();
+    const meses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+    const totais = { entrada: Array(12).fill(0), saida: Array(12).fill(0) };
+    for (const m of movs) {
+        const d = new Date(m.data);
+        if (d.getFullYear() === ano) totais[m.tipo][d.getMonth()] += Number(m.quantidade || 0);
+    }
+    const serie = (label, data, cor) => ({
+        label, data, backgroundColor: cor, borderRadius: 4, maxBarThickness: 18
+    });
+    document.getElementById("subMensal").textContent = `Unidades por mês em ${ano}`;
+    new Chart(document.getElementById("chartMensal"), {
+        type: "bar",
+        data: {
+            labels: meses,
+            datasets: [serie("Entradas", totais.entrada, c.entrada), serie("Saídas", totais.saida, c.saida)]
+        },
+        options: {
+            maintainAspectRatio: false,
+            interaction: { mode: "index", intersect: false },
+            plugins: {
+                legend: { position: "top", align: "end", labels: { color: c.texto, boxWidth: 12 } },
+                tooltip: { callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ${ctx.parsed.y} un.` } }
+            },
+            scales: {
+                x: { ticks: { color: c.texto }, grid: { display: false } },
+                y: { beginAtZero: true, ticks: { color: c.texto, precision: 0 }, grid: { color: c.grade } }
+            }
+        }
+    });
 }
 
 function chartMovimentacoes(movs, inicio) {
@@ -142,16 +197,13 @@ function chartConsumo(saidas, janelaDias) {
     });
 }
 
-function chartCategorias(produtos, cfg) {
+function chartCategorias(produtos) {
     const c = COR();
     const grupos = {};
     for (const p of produtos) {
         const cat = p.categoria || "Sem categoria";
-        grupos[cat] ||= { ok: 0, baixo: 0, zerado: 0 };
-        const s = statusProduto(p, cfg);
-        if (s.zerado) grupos[cat].zerado++;
-        else if (s.baixo) grupos[cat].baixo++;
-        else grupos[cat].ok++;
+        grupos[cat] ||= { normal: 0, atencao: 0, repor: 0 };
+        grupos[cat][statusEstoque(p).codigo]++;
     }
     const categorias = Object.keys(grupos).sort();
     const serie = (label, campo, cor) => ({
@@ -164,9 +216,9 @@ function chartCategorias(produtos, cfg) {
         data: {
             labels: categorias,
             datasets: [
-                serie("Em ordem", "ok", c.ok),
-                serie("Abaixo do mínimo", "baixo", c.baixo),
-                serie("Sem estoque", "zerado", c.zerado)
+                serie("Normal", "normal", c.ok),
+                serie("Atenção", "atencao", c.baixo),
+                serie("Repor", "repor", c.zerado)
             ]
         },
         options: {
@@ -191,9 +243,9 @@ function renderVencimentos(produtos, cfg) {
         .sort((a, b) => daysUntil(a.validade) - daysUntil(b.validade))
         .slice(0, 12);
     document.getElementById("vencimentosBody").innerHTML = proximos.map(p => {
-        const s = statusProduto(p, cfg);
-        const badge = s.vencido ? `<span class="badge bg-danger">Vencido</span>`
-            : s.vencendo ? `<span class="badge bg-warning text-dark">${Math.ceil(s.dias)}d</span>` : "";
+        const dias = daysUntil(p.validade);
+        const badge = dias < 0 ? `<span class="badge bg-danger">Vencido</span>`
+            : dias <= cfg.dias_alerta_validade ? `<span class="badge bg-warning text-dark">${Math.ceil(dias)}d</span>` : "";
         return `<tr><td>${escapeHtml(p.nome)}</td><td>${formatDateBR(p.validade)} ${badge}</td><td>${p.quantidade}</td></tr>`;
     }).join("") || `<tr><td colspan="3" class="text-muted text-center py-3">Nenhum produto com validade cadastrada.</td></tr>`;
 }
@@ -240,7 +292,7 @@ function renderAlertas(a, cfg) {
     <div class="alert alert-info shadow-sm border-0 rounded-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
       <div>
         <h5 class="mb-1"><i class="bi bi-cart-plus"></i> Reposição necessária</h5>
-        <p class="mb-0">${a.baixo.length} produto(s) estão no estoque mínimo ou abaixo (${a.zerados.length} zerado(s)).</p>
+        <p class="mb-0">${a.repor.length} produto(s) para repor e ${a.atencao.length} em atenção (${a.zerados.length} sem estoque).</p>
       </div>
       <a href="${destino}" class="btn btn-light">${can(user, "compras") ? "Abrir lista de compras" : "Ver produtos"}</a>
     </div>`;

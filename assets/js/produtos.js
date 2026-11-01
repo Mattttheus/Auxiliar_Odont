@@ -1,15 +1,18 @@
 // Lógica da página de Produtos: listagem, filtros, CRUD, entrada/saída, lotes e exportação CSV.
-import { requireAuth, getCurrentUser } from "./auth.js";
+import { requireAuth } from "./auth.js";
 import { renderShell } from "./layout.js";
 import {
     listProdutos, createProduto, updateProduto, deleteProduto,
     registrarEntrada, registrarSaida, getProdutoByCodigoBarras,
-    getConfiguracoes, listLotes, isMigracaoPendente, MSG_MIGRACAO_V3
+    getConfiguracoes, listLotes
 } from "./data.js";
 import { formatDateBR, formatMoneyBR, downloadCsv, escapeHtml, toDateInputValue } from "./utils.js";
 import { can } from "./permissions.js";
 import { abrirScanner } from "./scanner.js";
-import { estoqueMinimo, statusProduto } from "./alertas.js";
+import { estoqueMinimo, statusProduto, statusEstoque, badgeEstoque } from "./alertas.js";
+
+// Aba Listas da planilha, com as unidades que os itens já usam.
+const UNIDADES = ["Unidade", "Caixa", "Pacote", "Tubos", "Frasco", "Bloco", "Galão", "Litro", "Quilograma", "Metro", "Par", "Rolo", "Outro"];
 
 const user = await requireAuth();
 if (user) {
@@ -115,6 +118,13 @@ if (user) {
         lista.innerHTML = categorias.map(c => `<option value="${escapeHtml(c)}">`).join("");
         document.body.appendChild(lista);
         document.getElementById("produtoCategoria").setAttribute("list", "categoriasSugeridas");
+
+        document.getElementById("unidadesSugeridas")?.remove();
+        const unidades = document.createElement("datalist");
+        unidades.id = "unidadesSugeridas";
+        unidades.innerHTML = UNIDADES.map(u => `<option value="${u}">`).join("");
+        document.body.appendChild(unidades);
+        document.getElementById("produtoUnidade").setAttribute("list", "unidadesSugeridas");
     }
 
     function renderStats() {
@@ -133,6 +143,8 @@ if (user) {
             if (filtroAtual === "vencidos" && !s.vencido) return false;
             if (filtroAtual === "prestes" && !s.vencendo) return false;
             if (filtroAtual === "baixo" && !s.baixo) return false;
+            if (filtroAtual === "repor" && !s.repor) return false;
+            if (filtroAtual === "atencao" && !s.atencao) return false;
             if (categoria && p.categoria !== categoria) return false;
             if (busca) {
                 const texto = [p.nome, p.descricao, p.codigo_barras, p.localizacao, p.categoria].join(" ").toLowerCase();
@@ -148,11 +160,10 @@ if (user) {
 
         tbody.innerHTML = lista.map(p => {
             const s = statusProduto(p, cfg);
-            let statusBadge = `<span class="badge bg-success">OK</span>`;
-            if (s.vencido) statusBadge = `<span class="badge bg-danger">Vencido</span>`;
-            else if (s.vencendo) statusBadge = `<span class="badge bg-warning text-dark">Vence em ${Math.ceil(s.dias)}d</span>`;
+            let statusBadge = badgeEstoque(p);
+            if (s.vencido) statusBadge += ` <span class="badge bg-danger">Vencido</span>`;
+            else if (s.vencendo) statusBadge += ` <span class="badge bg-warning text-dark">Vence em ${Math.ceil(s.dias)}d</span>`;
             if (s.zerado) statusBadge += ` <span class="badge bg-dark">Zerado</span>`;
-            else if (s.baixo) statusBadge += ` <span class="badge bg-info text-dark">Baixo</span>`;
 
             return `
     <tr>
@@ -263,8 +274,7 @@ if (user) {
             bootstrap.Modal.getInstance(document.getElementById("modalProduto")).hide();
             await carregarProdutos();
         } catch (err) {
-            if (isMigracaoPendente(err)) return alert("Erro ao salvar produto: " + MSG_MIGRACAO_V3);
-            alert("Erro ao salvar produto: " + (err.message.includes("duplicate") ? "Já existe um produto com esse código de barras." : err.message));
+            alert("Erro ao salvar produto: " + err.message);
         }
     }
 
@@ -297,7 +307,7 @@ if (user) {
         if (!produto) return alert("Selecione um produto.");
 
         try {
-            await registrarEntrada(produto, quantidade, observacao, getCurrentUser(), { lote, validade });
+            await registrarEntrada(produto, quantidade, observacao, { lote, validade });
             bootstrap.Modal.getInstance(document.getElementById("modalEntrada")).hide();
             document.getElementById("formEntrada").reset();
             await carregarProdutos();
@@ -314,7 +324,7 @@ if (user) {
         if (!produto) return alert("Selecione um produto.");
 
         try {
-            await registrarSaida(produto, quantidade, observacao, getCurrentUser());
+            await registrarSaida(produto, quantidade, observacao);
             bootstrap.Modal.getInstance(document.getElementById("modalSaida")).hide();
             document.getElementById("formSaida").reset();
             await carregarProdutos();
@@ -326,10 +336,10 @@ if (user) {
     function exportarCsv() {
         const rows = produtosCache.map(p => [
             p.id, p.codigo_barras || "", p.nome, p.descricao || "", p.categoria || "", p.localizacao || "", p.unidade || "",
-            p.preco, p.quantidade, estoqueMinimo(p), toDateInputValue(p.validade)
+            p.preco, p.estoque_inicial, p.quantidade, estoqueMinimo(p), statusEstoque(p).label, toDateInputValue(p.validade)
         ]);
         downloadCsv("produtos_export.csv",
-            ["id", "codigo_barras", "nome", "descricao", "categoria", "localizacao", "unidade", "preco", "quantidade", "estoque_minimo", "validade"],
+            ["id", "codigo_barras", "nome", "descricao", "categoria", "localizacao", "unidade", "preco", "estoque_inicial", "quantidade", "estoque_minimo", "status", "validade"],
             rows);
     }
 }

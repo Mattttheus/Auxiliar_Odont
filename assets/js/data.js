@@ -1,262 +1,89 @@
-// Camada de acesso a dados (substitui as queries SQL do MySQL por Supabase/Postgres).
-import { supabase } from "./supabase-init.js";
+// Camada de acesso a dados: cada função chama uma ação da API local (api/index.php).
+import { apiGet, apiPost } from "./api.js";
 
 // ---------- PRODUTOS ----------
-export async function listProdutos() {
-    const { data, error } = await supabase.from("produtos").select("*").order("nome");
-    if (error) throw error;
-    return data;
-}
+export const listProdutos = () => apiGet("produtos.listar");
+export const getProduto = (id) => apiGet("produtos.obter", { id });
+export const getProdutoByCodigoBarras = (codigo) => apiGet("produtos.por_codigo", { codigo });
+export const createProduto = (data) => apiPost("produtos.criar", data);
+export const updateProduto = (id, data) => apiPost("produtos.atualizar", { ...data, id });
+export const deleteProduto = (id) => apiPost("produtos.excluir", { id });
 
-export async function getProduto(id) {
-    const { data, error } = await supabase.from("produtos").select("*").eq("id", id).single();
-    if (error) return null;
-    return data;
-}
-
-export async function getProdutoByCodigoBarras(codigo) {
-    const { data, error } = await supabase.from("produtos").select("*").eq("codigo_barras", codigo).maybeSingle();
-    if (error) throw error;
-    return data;
-}
-
-export async function createProduto(data) {
-    const { error } = await supabase.from("produtos").insert(data);
-    if (error) throw error;
-}
-
-export async function updateProduto(id, data) {
-    const { error } = await supabase
-        .from("produtos")
-        .update({ ...data, atualizado_em: new Date().toISOString() })
-        .eq("id", id);
-    if (error) throw error;
-}
-
-export async function deleteProduto(id) {
-    const { error } = await supabase.from("produtos").delete().eq("id", id);
-    if (error) throw error;
-}
+/** Lógica da planilha: quantidade = estoque inicial + entradas - saídas (e ajustes). */
+export const conferirSaldos = () => apiGet("produtos.conferencia");
 
 // ---------- ENTRADA / SAÍDA ----------
-/** Erro de schema/função ausente: a migração v3 ainda não foi aplicada no Supabase. */
-export function isMigracaoPendente(err) {
-    const codigos = ["PGRST202", "PGRST204", "PGRST205", "42P01", "42703", "42883"];
-    return !!err && (codigos.includes(err.code) || /schema cache|does not exist/i.test(err.message || ""));
-}
-
-export const MSG_MIGRACAO_V3 =
-    "Esta função depende da migração v3 do banco. Execute legacy-php/database/supabase_migration_v3_relatorio_final.sql no SQL Editor do Supabase.";
-
-/**
- * Registra uma entrada ou saída de forma transacional no banco (RPC), incluindo
- * lote/validade (entrada), baixa FEFO de lotes (saída) e histórico.
- * Se a migração v3 ainda não foi aplicada, cai no fluxo antigo feito pelo navegador.
- */
-export async function registrarMovimentacao({ produto, tipo, quantidade, observacao = "", lote = null, validade = null, origem = "manual", user }) {
-    const { data, error } = await supabase.rpc("registrar_movimentacao", {
-        p_produto_id: produto.id,
-        p_tipo: tipo,
-        p_quantidade: Number(quantidade),
-        p_observacao: observacao || "",
-        p_lote: lote || null,
-        p_validade: validade || null,
-        p_origem: origem
-    });
-    if (!error) return data;
-    if (!isMigracaoPendente(error)) throw error;
-    return tipo === "entrada"
-        ? registrarEntradaLegado(produto, quantidade, observacao, user)
-        : registrarSaidaLegado(produto, quantidade, observacao, user);
-}
-
-export function registrarEntrada(produto, quantidade, observacao, user, extras = {}) {
-    return registrarMovimentacao({ produto, tipo: "entrada", quantidade, observacao, user, ...extras });
-}
-
-export function registrarSaida(produto, quantidade, observacao, user, extras = {}) {
-    return registrarMovimentacao({ produto, tipo: "saida", quantidade, observacao, user, ...extras });
-}
-
-/** Finaliza uma venda do PDV numa única transação (tudo ou nada). */
-export async function registrarVenda(itens, produtosCache, user) {
-    const { error } = await supabase.rpc("registrar_venda", {
-        p_itens: itens.map(i => ({ produto_id: i.produtoId, quantidade: i.quantidade }))
-    });
-    if (!error) return;
-    if (!isMigracaoPendente(error)) throw error;
-    for (const item of itens) {
-        const produto = produtosCache.find(p => String(p.id) === String(item.produtoId));
-        await registrarSaidaLegado(produto, item.quantidade, "Venda via Caixa (PDV)", user);
-    }
-}
-
-async function registrarEntradaLegado(produto, quantidade, observacao, user) {
-    const novoEstoque = Number(produto.quantidade || 0) + Number(quantidade);
-    await updateProduto(produto.id, { quantidade: novoEstoque });
-
-    const { error: e1 } = await supabase.from("entradas_produtos").insert({
+/** Registra uma entrada ou saída numa transação e devolve o novo estoque. */
+export async function registrarMovimentacao({ produto, tipo, quantidade, observacao = "", lote = null, validade = null, origem = "manual" }) {
+    const { estoque } = await apiPost("movimentar", {
         produto_id: produto.id,
-        produto_nome: produto.nome,
+        tipo,
         quantidade: Number(quantidade),
-        usuario_id: user.uid,
-        usuario_nome: user.nome,
-        observacao: observacao || ""
+        observacao,
+        lote,
+        validade: validade || null,
+        origem
     });
-    if (e1) throw e1;
-
-    const { error: e2 } = await supabase.from("historico").insert({
-        usuario_id: user.uid,
-        usuario_nome: user.nome,
-        produto_id: produto.id,
-        produto_nome: produto.nome,
-        acao: "Entrada",
-        descricao: `Entrada de ${quantidade} unidade(s)`
-    });
-    if (e2) throw e2;
-    return novoEstoque;
+    return estoque;
 }
 
-async function registrarSaidaLegado(produto, quantidade, observacao, user) {
-    const qtd = Number(quantidade);
-    if (qtd > Number(produto.quantidade || 0)) {
-        throw new Error(`Estoque insuficiente! Disponível: ${produto.quantidade}`);
-    }
-    const novoEstoque = Number(produto.quantidade || 0) - qtd;
-    await updateProduto(produto.id, { quantidade: novoEstoque });
+export function registrarEntrada(produto, quantidade, observacao, extras = {}) {
+    return registrarMovimentacao({ produto, tipo: "entrada", quantidade, observacao, ...extras });
+}
 
-    const { error: e1 } = await supabase.from("saidas_produtos").insert({
-        produto_id: produto.id,
-        produto_nome: produto.nome,
-        quantidade: qtd,
-        usuario_id: user.uid,
-        usuario_nome: user.nome,
-        observacao: observacao || ""
-    });
-    if (e1) throw e1;
+export function registrarSaida(produto, quantidade, observacao, extras = {}) {
+    return registrarMovimentacao({ produto, tipo: "saida", quantidade, observacao, ...extras });
+}
 
-    const { error: e2 } = await supabase.from("historico").insert({
-        usuario_id: user.uid,
-        usuario_nome: user.nome,
-        produto_id: produto.id,
-        produto_nome: produto.nome,
-        acao: "Saída",
-        descricao: `Saída de ${qtd} unidade(s)`
-    });
-    if (e2) throw e2;
-    return novoEstoque;
+/** Finaliza uma venda do Caixa numa única transação: sai tudo, ou nada. */
+export function registrarVenda(itens) {
+    return apiPost("venda", { itens: itens.map(i => ({ produto_id: i.produtoId, quantidade: i.quantidade })) });
 }
 
 // ---------- LOTES ----------
-/** Lotes com saldo de um produto, do que vence primeiro ao último. Vazio se a migração v3 não rodou. */
-export async function listLotes(produtoId) {
-    const { data, error } = await supabase.from("lotes").select("*")
-        .eq("produto_id", produtoId).gt("quantidade", 0)
-        .order("validade", { ascending: true, nullsFirst: false });
-    if (error) { if (isMigracaoPendente(error)) return []; throw error; }
-    return data;
-}
+/** Lotes com saldo de um produto, do que vence primeiro ao último. */
+export const listLotes = (produtoId) => apiGet("lotes.listar", { produto_id: produtoId });
 
 // ---------- MOVIMENTAÇÕES (análise) ----------
 /** Entradas e saídas a partir de uma data, normalizadas num único formato. */
 export async function listMovimentacoesDesde(dataInicio) {
-    const iso = dataInicio.toISOString();
-    const [ent, sai] = await Promise.all([
-        supabase.from("entradas_produtos").select("produto_id, produto_nome, quantidade, data_entrada").gte("data_entrada", iso),
-        supabase.from("saidas_produtos").select("produto_id, produto_nome, quantidade, data_saida").gte("data_saida", iso)
-    ]);
-    if (ent.error) throw ent.error;
-    if (sai.error) throw sai.error;
+    const { entradas, saidas } = await apiGet("movimentacoes.desde", { desde: dataInicio.toISOString() });
     return [
-        ...ent.data.map(e => ({ tipo: "entrada", produtoId: e.produto_id, produtoNome: e.produto_nome, quantidade: e.quantidade, data: e.data_entrada })),
-        ...sai.data.map(s => ({ tipo: "saida", produtoId: s.produto_id, produtoNome: s.produto_nome, quantidade: s.quantidade, data: s.data_saida }))
+        ...entradas.map(e => ({ tipo: "entrada", produtoId: e.produto_id, produtoNome: e.produto_nome, quantidade: e.quantidade, data: e.data_entrada })),
+        ...saidas.map(s => ({ tipo: "saida", produtoId: s.produto_id, produtoNome: s.produto_nome, quantidade: s.quantidade, data: s.data_saida }))
     ];
 }
 
-/** Saídas a partir de uma data (ou todas, se null). Pagina porque a API devolve no máximo 1000 linhas por consulta. */
-export async function listSaidasConsumo(dataInicio = null) {
-    const TAMANHO = 1000;
-    const linhas = [];
-    for (let inicio = 0; ; inicio += TAMANHO) {
-        let consulta = supabase.from("saidas_produtos").select("produto_id, quantidade")
-            .order("id").range(inicio, inicio + TAMANHO - 1);
-        if (dataInicio) consulta = consulta.gte("data_saida", dataInicio.toISOString());
-        const { data, error } = await consulta;
-        if (error) throw error;
-        linhas.push(...data);
-        if (data.length < TAMANHO) return linhas;
-    }
-}
+/** Saídas a partir de uma data (ou todas, se null), para a curva ABC. */
+export const listSaidasConsumo = (dataInicio = null) => apiGet("saidas.consumo", { desde: dataInicio ? dataInicio.toISOString() : null });
 
 // ---------- CONFIGURAÇÕES ----------
-export const CONFIG_PADRAO = { dias_alerta_validade: 30, janela_consumo_dias: 90, dias_cobertura: 30, dias_reposicao: 7 };
-
-/** Critérios de alerta/reposição. Usa os valores padrão se a migração v3 não rodou. */
-export async function getConfiguracoes() {
-    const { data, error } = await supabase.from("configuracoes").select("*").eq("id", 1).maybeSingle();
-    if (error) { if (isMigracaoPendente(error)) return { ...CONFIG_PADRAO }; throw error; }
-    return { ...CONFIG_PADRAO, ...(data || {}) };
-}
-
-export async function updateConfiguracoes(valores) {
-    const { error } = await supabase.from("configuracoes")
-        .update({ ...valores, atualizado_em: new Date().toISOString() }).eq("id", 1);
-    if (error) throw error;
-}
+export const getConfiguracoes = () => apiGet("configuracoes.obter");
+export const updateConfiguracoes = (valores) => apiPost("configuracoes.atualizar", valores);
 
 // ---------- LISTA DE COMPRAS ----------
-export async function sugerirListaCompras() {
-    const { data, error } = await supabase.rpc("sugerir_lista_compras");
-    if (error) throw error;
-    return data;
-}
+export const sugerirListaCompras = () => apiGet("compras.sugerir");
+export const listListasCompra = () => apiGet("compras.listas");
+export const updateStatusListaCompra = (id, status) => apiPost("compras.status", { id, status });
+export const receberListaCompra = async (id) => (await apiPost("compras.receber", { id })).itens;
 
-export async function listListasCompra() {
-    const { data, error } = await supabase.from("listas_compra")
-        .select("*, itens:listas_compra_itens(*)")
-        .order("criado_em", { ascending: false });
-    if (error) throw error;
-    return data;
-}
-
-export async function createListaCompra({ titulo, observacao, itens }, user) {
-    const { data: lista, error } = await supabase.from("listas_compra")
-        .insert({ titulo, observacao: observacao || null, criado_por: user.uid, criado_por_nome: user.nome })
-        .select().single();
-    if (error) throw error;
-    const { error: e2 } = await supabase.from("listas_compra_itens").insert(itens.map(i => ({
-        lista_id: lista.id,
-        produto_id: i.produto_id,
-        produto_nome: i.nome,
-        unidade: i.unidade || null,
-        quantidade_sugerida: i.quantidade_sugerida || 0,
-        quantidade: i.quantidade,
-        motivo: i.motivo || null
-    })));
-    if (e2) {
-        await supabase.from("listas_compra").delete().eq("id", lista.id);
-        throw e2;
-    }
-    return lista;
-}
-
-export async function updateStatusListaCompra(id, status) {
-    const { error } = await supabase.from("listas_compra")
-        .update({ status, atualizado_em: new Date().toISOString() }).eq("id", id);
-    if (error) throw error;
-}
-
-export async function receberListaCompra(id) {
-    const { data, error } = await supabase.rpc("receber_lista_compra", { p_lista_id: id });
-    if (error) throw error;
-    return data;
+export function createListaCompra({ titulo, observacao, itens }) {
+    return apiPost("compras.criar", {
+        titulo,
+        observacao: observacao || null,
+        itens: itens.map(i => ({
+            produto_id: i.produto_id,
+            quantidade: i.quantidade,
+            quantidade_sugerida: i.quantidade_sugerida || 0,
+            motivo: i.motivo || null
+        }))
+    });
 }
 
 // ---------- HISTÓRICO ----------
 export async function listHistorico() {
-    const { data, error } = await supabase.from("historico").select("*").order("data_acao", { ascending: false });
-    if (error) throw error;
-    return data.map(h => ({
+    const linhas = await apiGet("historico.listar");
+    return linhas.map(h => ({
         id: h.id,
         usuarioNome: h.usuario_nome || "Usuário removido",
         produtoNome: h.produto_nome || "Produto removido",
@@ -269,9 +96,8 @@ export async function listHistorico() {
 }
 
 export async function listSaidas() {
-    const { data, error } = await supabase.from("saidas_produtos").select("*").order("data_saida", { ascending: false });
-    if (error) throw error;
-    return data.map(s => ({
+    const linhas = await apiGet("saidas.listar");
+    return linhas.map(s => ({
         id: s.id,
         produtoNome: s.produto_nome,
         quantidade: s.quantidade,
@@ -285,9 +111,8 @@ export async function listSaidas() {
 
 // ---------- USUÁRIOS ----------
 export async function listUsuarios() {
-    const { data, error } = await supabase.from("usuarios").select("*").order("criado_em", { ascending: false });
-    if (error) throw error;
-    return data.map(u => ({
+    const linhas = await apiGet("usuarios.listar");
+    return linhas.map(u => ({
         id: u.id,
         nome: u.nome,
         email: u.email,
@@ -299,78 +124,10 @@ export async function listUsuarios() {
     }));
 }
 
-/** Cadastros públicos aguardando aprovação. Zero se a migração v4 não rodou. */
-export async function contarCadastrosPendentes() {
-    const { data, error } = await supabase.from("usuarios").select("id")
-        .eq("ativo", false).not("perfil_solicitado", "is", null);
-    if (error) { if (isMigracaoPendente(error)) return 0; throw error; }
-    return data.length;
-}
-
-/** O primeiro usuário do sistema vira administrador. */
-export async function sistemaSemUsuarios() {
-    const { data, error } = await supabase.rpc("sistema_sem_usuarios");
-    if (!error) return data;
-    if (!isMigracaoPendente(error)) throw error;
-    return (await countUsuarios()) === 0;
-}
-
-export async function countUsuarios() {
-    const { count, error } = await supabase.from("usuarios").select("*", { count: "exact", head: true });
-    if (error) throw error;
-    return count || 0;
-}
-
-/** Sem a migração v4, as colunas telefone e perfil_solicitado ainda não existem. */
-function semColunasV4({ telefone, perfil_solicitado, ...basico }) {
-    return basico;
-}
-
-/** Sem a migração v4, o banco também recusa o nível "Usuário comum". */
-function erroDeUsuario(error) {
-    return error.code === "23514" && /role/.test(error.message || "")
-        ? new Error("O nível Usuário comum depende da migração v4 do banco. Execute legacy-php/database/supabase_migration_v4_usuarios.sql no SQL Editor do Supabase.")
-        : error;
-}
-
-export async function createUsuarioProfile(uid, data) {
-    const { error } = await supabase.from("usuarios").insert({ id: uid, ...data });
-    if (!error) return;
-    if (!isMigracaoPendente(error)) throw erroDeUsuario(error);
-    const { error: e2 } = await supabase.from("usuarios").insert({ id: uid, ...semColunasV4(data) });
-    if (e2) throw erroDeUsuario(e2);
-}
-
-/**
- * Perfil de cadastro público: nasce inativo, como Usuário comum, até um admin aprovar.
- * Sem a migração v4, o banco só aceita o autocadastro como "vendedor"; inativo, ele
- * também não dá acesso a nada.
- */
-export async function criarPerfilPendente(uid, data) {
-    const { error } = await supabase.from("usuarios").insert({ id: uid, ...data, role: "comum", ativo: false });
-    if (!error) return;
-    if (!isMigracaoPendente(error)) throw error;
-    const { error: e2 } = await supabase.from("usuarios").insert({ id: uid, ...semColunasV4(data), role: "vendedor", ativo: false });
-    if (e2) throw e2;
-}
-
-export async function updateUsuario(id, data) {
-    const { error } = await supabase.from("usuarios").update(data).eq("id", id);
-    if (!error) return;
-    if (!isMigracaoPendente(error)) throw erroDeUsuario(error);
-    const { error: e2 } = await supabase.from("usuarios").update(semColunasV4(data)).eq("id", id);
-    if (e2) throw erroDeUsuario(e2);
-}
-
-/**
- * Exclui o login e o perfil. Devolve false se só o perfil pôde ser removido (migração
- * v4 pendente): nesse caso, a conta de login continua existindo no Supabase.
- */
-export async function excluirUsuario(id) {
-    const { error } = await supabase.rpc("excluir_usuario", { p_usuario_id: id });
-    if (!error) return true;
-    if (!isMigracaoPendente(error)) throw error;
-    const { error: e2 } = await supabase.from("usuarios").delete().eq("id", id);
-    if (e2) throw e2;
-    return false;
-}
+/** Cadastros públicos aguardando aprovação. */
+export const contarCadastrosPendentes = async () => (await apiGet("usuarios.pendentes")).total;
+export const createUsuario = (data) => apiPost("usuarios.criar", data);
+export const updateUsuario = (id, data) => apiPost("usuarios.atualizar", { ...data, id });
+export const excluirUsuario = (id) => apiPost("usuarios.excluir", { id });
+/** Gera uma senha temporária para o admin entregar à pessoa: a rede local não envia e-mail. */
+export const redefinirSenhaUsuario = async (id) => (await apiPost("usuarios.redefinir_senha", { id })).senha;

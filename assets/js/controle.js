@@ -2,9 +2,9 @@
 // aos menos consumidos) e controle de acesso dos usuários.
 import { requirePermission, can, ROLES, PERMISSOES, roleLabel, roleBadgeClass } from "./permissions.js";
 import { renderShell } from "./layout.js";
-import { listProdutos, listSaidasConsumo, listUsuarios, updateUsuario } from "./data.js";
+import { listProdutos, listSaidasConsumo, listUsuarios, updateUsuario, conferirSaldos } from "./data.js";
 import { downloadCsv, escapeHtml } from "./utils.js";
-import { estoqueMinimo } from "./alertas.js";
+import { estoqueMinimo, statusEstoque, badgeEstoque } from "./alertas.js";
 import { calcularCurvaAbc, LIMITE_A, LIMITE_B } from "./curva-abc.js";
 
 // Estas declarações precisam existir ANTES do bloco abaixo, que roda ainda durante o
@@ -20,6 +20,7 @@ let curva = [];
 let totalSaidas = 0;
 let grafico = null;
 let usuarios = [];
+let conferencia = [];
 
 const user = await requirePermission("controle");
 if (user) {
@@ -41,19 +42,17 @@ if (user) {
       <span><span class="abc-chave abc-a"></span> Classe A: até ${LIMITE_A}% do consumo</span>
       <span><span class="abc-chave abc-b"></span> Classe B: de ${LIMITE_A}% a ${LIMITE_B}%</span>
       <span><span class="abc-chave abc-c"></span> Classe C: restante, inclui produtos sem saídas</span>`;
+    document.getElementById("conferenciaTodos").addEventListener("change", renderConferencia);
     renderMatriz();
-    await Promise.all([carregarCurva(), carregarUsuarios()]);
+    await Promise.all([carregarCurva(), carregarUsuarios(), carregarConferencia()]);
 }
 
 function mensagem(html, tipo = "warning") {
     document.getElementById("msgContainer").innerHTML = html ? `<div class="alert alert-${tipo}">${html}</div>` : "";
 }
 
-function situacao(produto) {
-    const qtd = Number(produto.quantidade) || 0;
-    if (qtd === 0) return { baixo: true, label: "Sem estoque", badge: "bg-danger" };
-    if (qtd <= estoqueMinimo(produto)) return { baixo: true, label: "Abaixo do mínimo", badge: "bg-warning text-dark" };
-    return { baixo: false, label: "Em ordem", badge: "bg-success" };
+function precisaRepor(produto) {
+    return statusEstoque(produto).codigo !== "normal";
 }
 
 // ---------- CURVA ABC ----------
@@ -104,7 +103,7 @@ function renderResumo() {
             + (classe === "C" && semConsumo > 0 ? `. ${semConsumo} sem nenhuma saída` : "");
     }
 
-    const criticos = curva.filter(i => i.classe === "A" && situacao(i.produto).baixo);
+    const criticos = curva.filter(i => i.classe === "A" && precisaRepor(i.produto));
     document.getElementById("qtdCriticos").textContent = criticos.length;
     document.getElementById("detCriticos").textContent =
         `${criticos.filter(i => Number(i.produto.quantidade) === 0).length} sem estoque. Clique para ver na tabela`;
@@ -195,7 +194,7 @@ function itensFiltrados() {
     const categoria = document.getElementById("filtroCategoria").value;
     const busca = document.getElementById("filtroBusca").value.trim().toLowerCase();
     return curva.filter(i => {
-        if (classe === "critico" && !(i.classe === "A" && situacao(i.produto).baixo)) return false;
+        if (classe === "critico" && !(i.classe === "A" && precisaRepor(i.produto))) return false;
         if (classe === "sem" && i.consumo > 0) return false;
         if (["A", "B", "C"].includes(classe) && i.classe !== classe) return false;
         if (categoria && i.produto.categoria !== categoria) return false;
@@ -208,7 +207,6 @@ function renderTabela() {
     document.getElementById("qtdTabela").textContent = itens.length;
     document.getElementById("abcBody").innerHTML = itens.map(i => {
         const p = i.produto;
-        const s = situacao(p);
         const detalhes = [p.categoria, p.localizacao].filter(Boolean).map(escapeHtml).join(" · ");
         return `
     <tr>
@@ -220,7 +218,7 @@ function renderTabela() {
       <td>${i.consumo > 0 ? pct(i.pctAcumulado) : "-"}</td>
       <td>${p.quantidade}</td>
       <td>${estoqueMinimo(p)}</td>
-      <td><span class="badge ${s.badge}">${s.label}</span></td>
+      <td>${badgeEstoque(p)}</td>
     </tr>`;
     }).join("") || `<tr><td colspan="9" class="text-center text-muted py-4">Nenhum produto com esses filtros.</td></tr>`;
 }
@@ -229,7 +227,39 @@ function exportarCsv() {
     downloadCsv(`curva_abc_${new Date().toISOString().slice(0, 10)}.csv`,
         ["posicao", "classe", "produto", "categoria", "localizacao", "unidade", "consumo", "pct_consumo", "pct_acumulado", "estoque", "minimo", "situacao"],
         itensFiltrados().map(i => [i.posicao, i.classe, i.produto.nome, i.produto.categoria || "", i.produto.localizacao || "", i.produto.unidade || "",
-            i.consumo, i.pctConsumo.toFixed(2), i.pctAcumulado.toFixed(2), i.produto.quantidade, estoqueMinimo(i.produto), situacao(i.produto).label]));
+            i.consumo, i.pctConsumo.toFixed(2), i.pctAcumulado.toFixed(2), i.produto.quantidade, estoqueMinimo(i.produto), statusEstoque(i.produto).label]));
+}
+
+// ---------- CONFERÊNCIA DE SALDO ----------
+async function carregarConferencia() {
+    try {
+        conferencia = await conferirSaldos();
+        renderConferencia();
+    } catch (err) {
+        console.error(err);
+        document.getElementById("conferenciaBody").innerHTML =
+            `<tr><td colspan="9" class="text-center text-danger py-4">Erro ao conferir os saldos: ${escapeHtml(err.message)}</td></tr>`;
+    }
+}
+
+function renderConferencia() {
+    const divergentes = conferencia.filter(p => p.diferenca !== 0);
+    document.getElementById("resumoConferencia").innerHTML = divergentes.length
+        ? `<span class="badge bg-danger">${divergentes.length} produto(s) com diferença</span> de ${conferencia.length} conferidos.`
+        : `<span class="badge bg-success">Todos os ${conferencia.length} produtos conferem</span>`;
+    const lista = document.getElementById("conferenciaTodos").checked ? conferencia : divergentes;
+    document.getElementById("conferenciaBody").innerHTML = lista.map(p => `
+    <tr class="${p.diferenca !== 0 ? "table-danger" : ""}">
+      <td><small>${escapeHtml(p.codigo_barras || "-")}</small></td>
+      <td>${escapeHtml(p.nome)}</td>
+      <td>${p.estoque_inicial}</td>
+      <td>${p.entradas}</td>
+      <td>${p.saidas}</td>
+      <td>${p.ajustes}</td>
+      <td>${p.calculado}</td>
+      <td><strong>${p.quantidade}</strong></td>
+      <td>${p.diferenca}</td>
+    </tr>`).join("") || `<tr><td colspan="9" class="text-center text-muted py-4">Nenhuma diferença encontrada.</td></tr>`;
 }
 
 // ---------- CONTROLE DE ACESSO ----------

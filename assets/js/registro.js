@@ -1,11 +1,9 @@
-// Cadastro público: o primeiro usuário vira admin; os demais aguardam a aprovação de um admin.
-import { supabase } from "./supabase-init.js";
-import { SITE_URL } from "./supabase-config.js";
-import { garantirPerfil } from "./auth.js";
+// Cadastro: o primeiro usuário do sistema vira admin; os demais aguardam a aprovação de um admin.
+import { apiPost } from "./api.js";
 import {
     normalizarNome, normalizarEmail, normalizarTelefone,
     validarNome, validarEmail, validarTelefone, validarPerfilSolicitado, validarSenha, validarConfirmacaoSenha,
-    traduzirErroAuth, marcarCampo, ligarMascaraTelefone
+    marcarCampo, ligarMascaraTelefone
 } from "./validacao.js";
 
 const form = document.getElementById("registroForm");
@@ -48,42 +46,22 @@ form.addEventListener("submit", async (e) => {
     btn.disabled = true;
     btn.textContent = "Cadastrando...";
 
-    const email = normalizarEmail(valor("email"));
     try {
-        // A role só é decidida depois que o Supabase autentica o usuário (garantirPerfil).
-        // Os dados ficam nos metadados: com "Confirm email" ligado ainda não há sessão
-        // para criar o perfil, e ele é criado no primeiro login.
-        const { data, error } = await supabase.auth.signUp({
-            email,
-            password: valor("senha"),
-            options: {
-                emailRedirectTo: SITE_URL,
-                data: {
-                    nome: normalizarNome(valor("nome")),
-                    telefone: normalizarTelefone(valor("telefone")),
-                    perfil_solicitado: valor("perfilSolicitado")
-                }
-            }
+        const { usuario } = await apiPost("cadastrar", {
+            nome: normalizarNome(valor("nome")),
+            email: normalizarEmail(valor("email")),
+            telefone: normalizarTelefone(valor("telefone")),
+            perfil_solicitado: valor("perfilSolicitado"),
+            senha: valor("senha")
         });
-        if (error) throw error;
-        // Com "Confirm email" ligado, o Supabase não acusa e-mail repetido (para não revelar
-        // quem tem conta): responde com um usuário sem identidades.
-        if (data.user?.identities?.length === 0) throw new Error("already registered");
-
-        if (!data.session) {
-            concluir("Confirme o seu e-mail", `Enviamos um link para ${email}. Depois de confirmar, entre no sistema: o acesso é liberado após a aprovação de um administrador.`);
-            return;
-        }
-        const perfil = await garantirPerfil(data.user);
-        if (perfil.ativo) {
+        if (usuario) {
             window.location.href = "dashboard.html";
             return;
         }
-        await supabase.auth.signOut();
         concluir("Cadastro enviado", "Um administrador vai conferir os seus dados e liberar o acesso. Depois disso, é só entrar com o seu e-mail e senha.");
     } catch (err) {
         console.error(err);
-        errorAlert.textContent = traduzirErroAuth(err);
+        errorAlert.textContent = err.message;
         errorAlert.classList.remove("d-none");
     } finally {
         btn.disabled = false;

@@ -1,22 +1,34 @@
 // Utilidades compartilhadas: exportação CSV e formatação de datas.
 
+const SO_DATA = /^\d{4}-\d{2}-\d{2}$/;
+
+/** "2026-11-01" é um dia do calendário: lido como meia-noite UTC, apareceria como o dia anterior no Brasil. */
+function paraData(value) {
+    if (typeof value === "string" && SO_DATA.test(value)) {
+        const [ano, mes, dia] = value.split("-").map(Number);
+        return new Date(ano, mes - 1, dia);
+    }
+    return new Date(value);
+}
+
 export function toDateInputValue(value) {
     if (!value) return "";
-    const d = value?.toDate ? value.toDate() : new Date(value);
+    if (typeof value === "string" && SO_DATA.test(value)) return value;
+    const d = new Date(value);
     if (isNaN(d)) return "";
     return d.toISOString().slice(0, 10);
 }
 
 export function formatDateBR(value) {
     if (!value) return "-";
-    const d = value?.toDate ? value.toDate() : new Date(value);
+    const d = paraData(value);
     if (isNaN(d)) return "-";
     return d.toLocaleDateString("pt-BR");
 }
 
 export function formatDateTimeBR(value) {
     if (!value) return "-";
-    const d = value?.toDate ? value.toDate() : new Date(value);
+    const d = paraData(value);
     if (isNaN(d)) return "-";
     return d.toLocaleString("pt-BR");
 }
@@ -27,8 +39,7 @@ export function formatMoneyBR(value) {
 
 export function daysUntil(value) {
     if (!value) return Infinity;
-    const d = value?.toDate ? value.toDate() : new Date(value);
-    return (d.getTime() - new Date().setHours(0, 0, 0, 0)) / 86400000;
+    return (paraData(value).getTime() - new Date().setHours(0, 0, 0, 0)) / 86400000;
 }
 
 /** Gera e baixa um CSV a partir de um array de linhas (arrays de valores). */

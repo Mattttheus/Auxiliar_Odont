@@ -1,15 +1,13 @@
 // Gerenciamento de usuários (somente admin). Substitui pages/usuarios/*.php.
 import { requireAdmin, getCurrentUser } from "./auth.js";
 import { renderShell } from "./layout.js";
-import { listUsuarios, updateUsuario, excluirUsuario, createUsuarioProfile } from "./data.js";
+import { listUsuarios, updateUsuario, excluirUsuario, createUsuario, redefinirSenhaUsuario } from "./data.js";
 import { formatDateBR, escapeHtml } from "./utils.js";
-import { supabase, criarClienteIsolado } from "./supabase-init.js";
-import { SITE_URL } from "./supabase-config.js";
 import { ROLES, roleLabel, roleBadgeClass } from "./permissions.js";
 import {
     PERFIS_SOLICITAVEIS, normalizarNome, normalizarEmail, normalizarTelefone, formatarTelefone,
     validarNome, validarEmail, validarTelefone, validarSenha, validarConfirmacaoSenha,
-    traduzirErroAuth, marcarCampo, ligarMascaraTelefone
+    marcarCampo, ligarMascaraTelefone
 } from "./validacao.js";
 
 // Estas declarações precisam existir ANTES do bloco abaixo, que roda ainda durante o
@@ -123,7 +121,7 @@ function renderTabela() {
       <td>${formatDateBR(u.criadoEm)}</td>
       <td class="text-nowrap">
         <button class="btn btn-sm btn-primary btn-editar" data-id="${u.id}" title="Editar"><i class="bi bi-pencil"></i></button>
-        <button class="btn btn-sm btn-outline-secondary btn-reset" data-id="${u.id}" title="Enviar redefinição de senha"><i class="bi bi-key"></i></button>
+        <button class="btn btn-sm btn-outline-secondary btn-reset" data-id="${u.id}" title="Gerar senha temporária"><i class="bi bi-key"></i></button>
         <button class="btn btn-sm btn-danger btn-excluir" data-id="${u.id}" title="Excluir" ${u.id === getCurrentUser()?.uid ? "disabled" : ""}><i class="bi bi-trash"></i></button>
       </td>
     </tr>`).join("") || `<tr><td colspan="7" class="text-center text-muted py-4">Nenhum usuário encontrado.</td></tr>`;
@@ -137,8 +135,6 @@ function prepararModal(titulo, { editando, proprio }) {
     document.getElementById("modalUsuarioTitle").textContent = titulo;
     document.getElementById("modalErro").classList.add("d-none");
     CAMPOS_MODAL.forEach(id => marcarCampo(id, null));
-    document.getElementById("usuarioEmail").readOnly = editando;
-    document.getElementById("emailFixo").classList.toggle("d-none", !editando);
     document.getElementById("senhaGroup").classList.toggle("d-none", editando);
     document.getElementById("usuarioRole").disabled = proprio;
     document.getElementById("usuarioAtivo").disabled = proprio;
@@ -171,10 +167,10 @@ function modalValido(existente) {
     const email = document.getElementById("usuarioEmail").value;
     const senha = document.getElementById("usuarioSenha").value;
     const nomeMudou = !existente || normalizarNome(nome) !== existente.nome;
-    const emailRepetido = !existente && usuariosCache.some(u => String(u.email).toLowerCase() === normalizarEmail(email));
+    const emailRepetido = usuariosCache.some(u => u.id !== existente?.id && String(u.email).toLowerCase() === normalizarEmail(email));
     const resultados = [
         marcarCampo("usuarioNome", nomeMudou ? validarNome(nome) : null),
-        marcarCampo("usuarioEmail", existente ? null : (validarEmail(email) || (emailRepetido ? "Este e-mail já está cadastrado." : null))),
+        marcarCampo("usuarioEmail", validarEmail(email) || (emailRepetido ? "Este e-mail já está cadastrado." : null)),
         marcarCampo("usuarioTelefone", validarTelefone(document.getElementById("usuarioTelefone").value)),
         marcarCampo("usuarioSenha", existente ? null : validarSenha(senha)),
         marcarCampo("usuarioSenhaConfirma", existente ? null : validarConfirmacaoSenha(senha, document.getElementById("usuarioSenhaConfirma").value))
@@ -193,6 +189,7 @@ async function salvarUsuario(e) {
 
     const dados = {
         nome: normalizarNome(document.getElementById("usuarioNome").value),
+        email: normalizarEmail(document.getElementById("usuarioEmail").value),
         telefone: normalizarTelefone(document.getElementById("usuarioTelefone").value) || null
     };
     if (id !== getCurrentUser()?.uid) {
@@ -206,47 +203,26 @@ async function salvarUsuario(e) {
         if (existente) {
             await updateUsuario(id, dados);
         } else {
-            await criarUsuarioSemDeslogarAdmin(normalizarEmail(document.getElementById("usuarioEmail").value), document.getElementById("usuarioSenha").value, dados);
+            await createUsuario({ ...dados, senha: document.getElementById("usuarioSenha").value });
         }
         bootstrap.Modal.getInstance(document.getElementById("modalUsuario")).hide();
         mensagem(`Usuário ${escapeHtml(dados.nome)} salvo.`);
         await carregarUsuarios();
     } catch (err) {
         console.error(err);
-        erroModal.textContent = "Erro ao salvar usuário: " + traduzirErroAuth(err);
+        erroModal.textContent = "Erro ao salvar usuário: " + err.message;
         erroModal.classList.remove("d-none");
     } finally {
         btn.disabled = false;
     }
 }
 
-/** Cria o novo usuário em um client isolado, para não substituir a sessão do admin logado. */
-async function criarUsuarioSemDeslogarAdmin(email, senha, dados) {
-    const { data, error } = await criarClienteIsolado().auth.signUp({
-        email,
-        password: senha,
-        options: { emailRedirectTo: SITE_URL, data: { nome: dados.nome } }
-    });
-    if (error) throw error;
-    if (!data.user) throw new Error("Não foi possível criar o usuário (verifique a confirmação de email nas configurações do Supabase Auth).");
-    // O Supabase não retorna erro para email já cadastrado (por segurança, evita
-    // que alguém descubra emails existentes); ele responde com um usuário "fantasma"
-    // sem identidades associadas. É assim que detectamos a duplicidade aqui.
-    if (data.user.identities && data.user.identities.length === 0) {
-        throw new Error("already registered");
-    }
-    await createUsuarioProfile(data.user.id, { ...dados, email });
-}
-
 async function excluir(id, acao) {
     const u = usuariosCache.find(x => x.id === id);
     if (!confirm(`${acao} "${u?.nome}"? A conta será excluída e a pessoa não conseguirá mais entrar. Para só bloquear o acesso, prefira desativar.`)) return;
     try {
-        const contaExcluida = await excluirUsuario(id);
-        mensagem(contaExcluida
-            ? `Conta de ${escapeHtml(u.nome)} excluída.`
-            : `Perfil de ${escapeHtml(u.nome)} removido. Para apagar também o login, execute a migração v4 ou remova em Supabase → Authentication → Users.`,
-            contaExcluida ? "success" : "warning");
+        await excluirUsuario(id);
+        mensagem(`Conta de ${escapeHtml(u.nome)} excluída.`);
         await carregarUsuarios();
     } catch (err) {
         console.error(err);
@@ -256,13 +232,12 @@ async function excluir(id, acao) {
 
 async function resetarSenha(id) {
     const u = usuariosCache.find(x => x.id === id);
-    if (!confirm(`Enviar um link de redefinição de senha para ${u.email}?`)) return;
+    if (!confirm(`Gerar uma senha temporária para ${u.nome}? A senha atual dessa pessoa deixa de funcionar.`)) return;
     try {
-        const { error } = await supabase.auth.resetPasswordForEmail(u.email, { redirectTo: `${SITE_URL}nova-senha.html` });
-        if (error) throw error;
-        mensagem(`Link de redefinição de senha enviado para ${escapeHtml(u.email)}.`);
+        const senha = await redefinirSenhaUsuario(id);
+        mensagem(`Senha temporária de ${escapeHtml(u.nome)}: <strong>${escapeHtml(senha)}</strong>. Entregue à pessoa e peça que ela troque em Alterar senha. Esta senha não será mostrada de novo.`);
     } catch (err) {
         console.error(err);
-        mensagem("Erro ao enviar e-mail: " + escapeHtml(traduzirErroAuth(err)), "danger");
+        mensagem("Erro ao gerar a senha: " + escapeHtml(err.message), "danger");
     }
 }

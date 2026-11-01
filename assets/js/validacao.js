@@ -1,5 +1,6 @@
 // Regras únicas das informações de usuário, usadas no cadastro público, na tela Usuários
 // e na troca de senha. Cada validar* devolve a mensagem de erro, ou null se estiver certo.
+// O servidor repete estas regras em api/modulos/contas.php.
 
 export const SENHA_MINIMA = 8;
 export const PERFIS_SOLICITAVEIS = ["dentista", "estoquista", "vendedor", "comum"];
@@ -57,23 +58,6 @@ export function validarSenha(senha) {
 
 export function validarConfirmacaoSenha(senha, confirmacao) {
     return senha === confirmacao ? null : "As senhas não são iguais.";
-}
-
-/** Mensagem compreensível para os erros do Supabase Auth. */
-export function traduzirErroAuth(err) {
-    const msg = String(err?.message ?? err ?? "");
-    if (/failed to fetch|networkerror|load failed/i.test(msg)) {
-        return "Não foi possível conectar ao servidor do sistema. Verifique sua internet e tente de novo; se continuar, avise o administrador.";
-    }
-    if (/invalid login credentials/i.test(msg)) return "E-mail ou senha inválidos.";
-    if (/email not confirmed/i.test(msg)) return "Confirme seu e-mail pelo link que enviamos antes de entrar.";
-    if (/already (been )?registered/i.test(msg)) return "Este e-mail já está cadastrado.";
-    if (/rate limit|too many|only request this/i.test(msg)) return "Muitas tentativas seguidas. Aguarde alguns minutos e tente de novo.";
-    if (/different from the old/i.test(msg)) return "A nova senha deve ser diferente da atual.";
-    if (/signups? not allowed|signup.*disabled/i.test(msg)) return "O cadastro de novos usuários está desativado no Supabase.";
-    if (/password/i.test(msg)) return `A senha não foi aceita. Use pelo menos ${SENHA_MINIMA} caracteres, com letras e números.`;
-    if (/invalid/i.test(msg) && /email/i.test(msg)) return "Este e-mail não foi aceito. Confira se está correto.";
-    return msg;
 }
 
 // ---------- FORMULÁRIOS ----------

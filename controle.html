@@ -5,8 +5,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Controle e Curva ABC - Auxiliar Odont</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="assets/vendor/bootstrap/bootstrap.min.css" rel="stylesheet">
+    <link href="assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
     <link href="assets/css/custom.css" rel="stylesheet">
 </head>
 
@@ -26,6 +26,9 @@
             <ul class="nav nav-tabs mb-4 no-print" role="tablist">
                 <li class="nav-item" role="presentation">
                     <button class="nav-link active" type="button" role="tab" data-bs-toggle="tab" data-bs-target="#abaAbc"><i class="bi bi-bar-chart-steps"></i> Curva ABC do estoque</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" type="button" role="tab" data-bs-toggle="tab" data-bs-target="#abaConferencia"><i class="bi bi-clipboard-check"></i> Conferência de saldo</button>
                 </li>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" type="button" role="tab" data-bs-toggle="tab" data-bs-target="#abaAcesso"><i class="bi bi-shield-lock"></i> Controle de acesso</button>
@@ -82,7 +85,7 @@
                         <div class="col-6 col-lg-3">
                             <a href="#tabelaAbc" class="text-decoration-none" id="linkCriticos">
                                 <div class="card shadow border-0 rounded-4 p-3 h-100">
-                                    <h6 class="text-muted"><i class="bi bi-exclamation-triangle text-danger"></i> Classe A abaixo do mínimo</h6>
+                                    <h6 class="text-muted"><i class="bi bi-exclamation-triangle text-danger"></i> Classe A em Repor ou Atenção</h6>
                                     <h2 id="qtdCriticos" class="mb-0">0</h2>
                                     <small class="text-muted" id="detCriticos"></small>
                                 </div>
@@ -114,7 +117,7 @@
                                     <option value="B">Classe B</option>
                                     <option value="C">Classe C</option>
                                     <option value="sem">Sem saídas no período</option>
-                                    <option value="critico">Classe A abaixo do mínimo</option>
+                                    <option value="critico">Classe A em Repor ou Atenção</option>
                                 </select>
                                 <select class="form-select abc-filtro" id="filtroCategoria" aria-label="Filtrar por categoria">
                                     <option value="">Todas as categorias</option>
@@ -143,6 +146,28 @@
                         </div>
                     </div>
 
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="abaConferencia" role="tabpanel">
+                    <div class="table-container">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+                            <h5 class="mb-0"><i class="bi bi-clipboard-check"></i> Conferência de saldo</h5>
+                            <div class="form-check form-switch mb-0">
+                                <input class="form-check-input" type="checkbox" role="switch" id="conferenciaTodos">
+                                <label class="form-check-label" for="conferenciaTodos">Mostrar todos os produtos</label>
+                            </div>
+                        </div>
+                        <p class="text-muted small">Mesma lógica da planilha: quantidade atual = estoque inicial + entradas − saídas, somando os ajustes manuais. Uma diferença indica estoque alterado fora do registro.</p>
+                        <p id="resumoConferencia">Conferindo...</p>
+                        <div class="table-responsive">
+                            <table class="table align-middle mb-0">
+                                <thead>
+                                    <tr><th>Código</th><th>Item</th><th>Inicial</th><th>Entradas</th><th>Saídas</th><th>Ajustes</th><th>Calculado</th><th>Atual</th><th>Diferença</th></tr>
+                                </thead>
+                                <tbody id="conferenciaBody"></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 
@@ -185,8 +210,8 @@
 
     <footer><small>© <span id="year"></span> - Auxiliar Odont | Sistema de Controle de Estoque</small></footer>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="assets/vendor/bootstrap/bootstrap.bundle.min.js"></script>
+    <script src="assets/vendor/chartjs/chart.umd.js"></script>
     <script>document.getElementById("year").textContent = new Date().getFullYear();</script>
     <script type="module" src="assets/js/controle.js"></script>
 </body>

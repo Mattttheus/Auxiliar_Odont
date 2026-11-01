@@ -85,7 +85,7 @@ function carregarHtml5Qrcode() {
 
     carregandoLib = new Promise((resolve, reject) => {
         const script = document.createElement("script");
-        script.src = "https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js";
+        script.src = "assets/vendor/html5-qrcode/html5-qrcode.min.js";
         script.onload = () => resolve();
         script.onerror = () => reject(new Error("Falha ao carregar a biblioteca de leitura de código de barras."));
         document.head.appendChild(script);

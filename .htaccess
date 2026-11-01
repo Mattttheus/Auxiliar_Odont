@@ -1,11 +1,20 @@
 # Libera o projeto para a rede local: o Apache do WAMP só libera este computador por padrão.
-# O MySQL e o phpMyAdmin continuam acessíveis só daqui. O GitHub Pages ignora este arquivo.
+# O MySQL e o phpMyAdmin continuam acessíveis só daqui.
 Require local
 Require ip 192.168.1
 Options -Indexes
 
-# Repositório, configuração do editor e arquivos que não são telas do sistema.
+# O navegador sempre confere se mudou (304 quando igual): nunca mistura versão antiga e nova.
+<FilesMatch "\.(html|js|css)$">
+    Header set Cache-Control "no-cache"
+</FilesMatch>
+
+# A versão antiga em PHP foi substituída pelo sistema atual: quem tinha o endereço cai no login.
+RedirectMatch 302 "^/Auxiliar_Odont/legacy-php(/.*)?$" "/Auxiliar_Odont/"
+
+# Repositório, configuração do editor, código interno da API e arquivos que não são telas.
 RedirectMatch 404 "/\.(git|github|claude)(/|$)"
-<FilesMatch "\.(sql|docx|md|yml)$">
+RedirectMatch 404 "/api/(nucleo\.php|modulos(/|$))"
+<FilesMatch "\.(sql|py|docx|xlsx|md|yml)$">
     Require all denied
 </FilesMatch>

@@ -1,7 +1,6 @@
 // Movimentação por QR/código: lê a etiqueta, mostra o item e sua localização para
 // conferência e registra entrada (com lote/validade) ou saída no banco.
 import { requirePermission, can } from "./permissions.js";
-import { getCurrentUser } from "./auth.js";
 import { renderShell } from "./layout.js";
 import { listProdutos, getProduto, getProdutoByCodigoBarras, listLotes, registrarMovimentacao } from "./data.js";
 import { formatDateBR, escapeHtml } from "./utils.js";
@@ -199,8 +198,7 @@ async function confirmar() {
             observacao: document.getElementById("movObs").value.trim() || (tipo === "entrada" ? "Entrada via QR" : "Saída via QR"),
             lote: tipo === "entrada" ? document.getElementById("movLote").value.trim() : null,
             validade: tipo === "entrada" ? document.getElementById("movValidade").value : null,
-            origem: "qr",
-            user: getCurrentUser()
+            origem: "qr"
         });
         sessao.unshift({ hora: new Date(), tipo, nome: produtoAtual.nome, quantidade, estoque: novoEstoque });
         renderSessao();

@@ -1,15 +1,12 @@
 // Lista de compras: sugestão automática (rotina SQL sugerir_lista_compras), critérios
 // configuráveis, listas salvas no banco e recebimento que dá entrada no estoque.
 import { requirePermission, can } from "./permissions.js";
-import { getCurrentUser } from "./auth.js";
 import { renderShell } from "./layout.js";
 import {
-    sugerirListaCompras, getConfiguracoes, updateConfiguracoes, listProdutos,
-    listListasCompra, createListaCompra, updateStatusListaCompra, receberListaCompra,
-    isMigracaoPendente, MSG_MIGRACAO_V3
+    sugerirListaCompras, getConfiguracoes, updateConfiguracoes,
+    listListasCompra, createListaCompra, updateStatusListaCompra, receberListaCompra
 } from "./data.js";
 import { formatDateBR, formatDateTimeBR, downloadCsv, escapeHtml } from "./utils.js";
-import { estoqueMinimo } from "./alertas.js";
 
 const STATUS = {
     aberta: { label: "Aberta", badge: "bg-primary" },
@@ -20,7 +17,6 @@ const STATUS = {
 
 let sugestoes = [];
 let listas = [];
-let migracaoOk = true;
 const desmarcados = new Set();
 
 const user = await requirePermission("compras");
@@ -81,21 +77,8 @@ async function salvarCriterios(e) {
         await carregarSugestoes();
         mensagem("Critérios salvos. A sugestão foi recalculada.", "success");
     } catch (err) {
-        mensagem(isMigracaoPendente(err) ? MSG_MIGRACAO_V3 : "Erro ao salvar critérios: " + escapeHtml(err.message), "danger");
+        mensagem("Erro ao salvar critérios: " + escapeHtml(err.message), "danger");
     }
-}
-
-/** Sem a migração v3: sugestão simples só pelo estoque mínimo (repor até o dobro do mínimo). */
-async function sugestaoLocal() {
-    const produtos = await listProdutos();
-    return produtos
-        .filter(p => Number(p.quantidade) <= estoqueMinimo(p) && estoqueMinimo(p) > 0)
-        .map(p => ({
-            produto_id: p.id, nome: p.nome, categoria: p.categoria, unidade: p.unidade, localizacao: p.localizacao,
-            quantidade: p.quantidade, estoque_minimo: estoqueMinimo(p), consumo_diario: null, qtd_vencendo: 0,
-            quantidade_sugerida: estoqueMinimo(p) * 2 - Number(p.quantidade),
-            motivo: Number(p.quantidade) === 0 ? "Sem estoque" : "Abaixo do mínimo"
-        }));
 }
 
 async function carregarSugestoes() {
@@ -103,16 +86,10 @@ async function carregarSugestoes() {
         `<tr><td colspan="9" class="text-center text-muted py-4">Calculando...</td></tr>`;
     try {
         sugestoes = await sugerirListaCompras();
-        migracaoOk = true;
     } catch (err) {
-        if (!isMigracaoPendente(err)) {
-            document.getElementById("sugestaoBody").innerHTML =
-                `<tr><td colspan="9" class="text-center text-danger py-4">Erro: ${escapeHtml(err.message)}</td></tr>`;
-            return;
-        }
-        migracaoOk = false;
-        mensagem(`${MSG_MIGRACAO_V3} Enquanto isso, a sugestão abaixo considera apenas o estoque mínimo.`);
-        sugestoes = await sugestaoLocal();
+        document.getElementById("sugestaoBody").innerHTML =
+            `<tr><td colspan="9" class="text-center text-danger py-4">Erro: ${escapeHtml(err.message)}</td></tr>`;
+        return;
     }
     sugestoes.forEach(s => { s.pedir = s.quantidade_sugerida; });
     renderSugestoes();
@@ -151,7 +128,6 @@ function itensSelecionados() {
 }
 
 async function salvarLista() {
-    if (!migracaoOk) return mensagem(MSG_MIGRACAO_V3, "danger");
     const itens = itensSelecionados();
     if (itens.length === 0) return alert("Selecione ao menos um item.");
     const titulo = document.getElementById("tituloLista").value.trim() || `Compra ${new Date().toLocaleDateString("pt-BR")}`;
@@ -159,7 +135,7 @@ async function salvarLista() {
         await createListaCompra({
             titulo,
             itens: itens.map(s => ({ ...s, quantidade: s.pedir }))
-        }, getCurrentUser());
+        });
         mensagem(`Lista "${escapeHtml(titulo)}" salva com ${itens.length} item(ns).`, "success");
         await carregarListas();
     } catch (err) {
@@ -169,10 +145,6 @@ async function salvarLista() {
 
 async function carregarListas() {
     const tbody = document.getElementById("listasBody");
-    if (!migracaoOk) {
-        tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-3">Disponível após a migração v3.</td></tr>`;
-        return;
-    }
     try {
         listas = await listListasCompra();
     } catch (err) {

@@ -1,6 +1,5 @@
 // Caixa (PDV): venda rápida com carrinho, escaneando ou selecionando produtos.
 import { requirePermission } from "./permissions.js";
-import { getCurrentUser } from "./auth.js";
 import { renderShell } from "./layout.js";
 import { listProdutos, getProdutoByCodigoBarras, registrarVenda } from "./data.js";
 import { formatMoneyBR, escapeHtml } from "./utils.js";
@@ -112,7 +111,7 @@ async function finalizarVenda() {
 
     try {
         // Uma única transação no banco: ou todos os itens saem, ou nenhum.
-        await registrarVenda(carrinho, produtosCache, getCurrentUser());
+        await registrarVenda(carrinho);
         alert("Venda finalizada com sucesso!");
         carrinho = [];
         produtosCache = await listProdutos();

@@ -1,12 +1,5 @@
--- Banco LOCAL da versão antiga em PHP (legacy-php), no MySQL do WAMP.
--- O sistema atual usa o Supabase e não depende deste banco.
---
--- Como usar: phpMyAdmin (http://localhost/phpmyadmin/) > Importar > este arquivo.
--- Pode ser importado de novo: não apaga nem altera o que já existe.
---
--- O banco é próprio porque o estoque_db deste computador pertence ao Auxiliar_Obras.
--- Não há usuário padrão, pois este arquivo é público: quem se cadastrar primeiro em
--- pages/registro.php vira administrador.
+-- OBSOLETO: era o banco da versão antiga em PHP. Não importe: o sistema atual usa banco/auxiliar_odont.sql.
+-- Mantido só como referência da estrutura original.
 
 CREATE DATABASE IF NOT EXISTS auxiliar_odont
 CHARACTER SET utf8mb4
