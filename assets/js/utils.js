@@ -53,5 +53,6 @@ export function downloadCsv(filename, headerRow, rows) {
 export function escapeHtml(str) {
     const div = document.createElement("div");
     div.textContent = str ?? "";
-    return div.innerHTML;
+    // innerHTML não escapa aspas: sem isso, o valor quebraria atributos HTML (ex.: value="...").
+    return div.innerHTML.replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }

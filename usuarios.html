@@ -16,7 +16,7 @@
     <div class="main-content">
         <div class="container-fluid py-4">
 
-            <div class="d-flex justify-content-between align-items-center mb-4">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
                 <div>
                     <h2 class="fw-bold"><i class="bi bi-people-fill"></i> Gerenciar Usuários</h2>
                     <p class="text-muted mb-0">Usuários cadastrados no sistema</p>
@@ -27,20 +27,54 @@
 
             <div id="msgContainer"></div>
 
+            <div class="table-container mb-4 d-none" id="pendentesCard">
+                <h5 class="mb-1"><i class="bi bi-person-check"></i> Cadastros aguardando aprovação <span class="badge bg-warning text-dark" id="qtdPendentes">0</span></h5>
+                <p class="text-muted small">Confira os dados, escolha o perfil e aprove. Quem não for da equipe deve ser recusado: a conta é excluída.</p>
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>E-mail</th>
+                                <th>Telefone</th>
+                                <th style="width:200px">Perfil</th>
+                                <th>Cadastro</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pendentesBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
             <div class="table-container">
-                <table class="table table-hover table-bordered align-middle">
-                    <thead class="table-primary">
-                        <tr>
-                            <th>Nome</th>
-                            <th>Email</th>
-                            <th>Perfil</th>
-                            <th>Status</th>
-                            <th>Criado em</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody id="usuariosTableBody"></tbody>
-                </table>
+                <div class="d-flex flex-wrap gap-2 mb-3">
+                    <input class="form-control w-auto" id="filtroBusca" type="search" placeholder="Nome, e-mail ou telefone" aria-label="Buscar usuário">
+                    <select class="form-select w-auto" id="filtroPerfil" aria-label="Filtrar por nível">
+                        <option value="">Todos os níveis</option>
+                    </select>
+                    <select class="form-select w-auto" id="filtroStatus" aria-label="Filtrar por status">
+                        <option value="">Todos os status</option>
+                        <option value="ativo">Ativos</option>
+                        <option value="inativo">Inativos</option>
+                    </select>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover table-bordered align-middle">
+                        <thead class="table-primary">
+                            <tr>
+                                <th>Nome</th>
+                                <th>Email</th>
+                                <th>Telefone</th>
+                                <th>Perfil</th>
+                                <th>Status</th>
+                                <th>Criado em</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usuariosTableBody"></tbody>
+                    </table>
+                </div>
             </div>
 
         </div>
@@ -52,27 +86,50 @@
     <div class="modal fade" id="modalUsuario" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
-                <form id="formUsuario">
+                <form id="formUsuario" novalidate>
                     <div class="modal-header">
                         <h5 class="modal-title" id="modalUsuarioTitle">Novo Usuário</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
+                        <div class="alert alert-danger d-none" id="modalErro" role="alert"></div>
                         <input type="hidden" id="usuarioId">
-                        <div class="mb-3"><label class="form-label" for="usuarioNome">Nome</label><input
-                                class="form-control" id="usuarioNome" required></div>
-                        <div class="mb-3"><label class="form-label" for="usuarioEmail">E-mail</label><input type="email"
-                                class="form-control" id="usuarioEmail" required></div>
-                        <div class="mb-3" id="senhaGroup"><label class="form-label"
-                                for="usuarioSenha">Senha</label><input type="password" class="form-control"
-                                id="usuarioSenha" minlength="6"><small class="text-muted" id="senhaHelp"></small></div>
+                        <div class="mb-3">
+                            <label class="form-label" for="usuarioNome">Nome completo</label>
+                            <input class="form-control" id="usuarioNome" maxlength="100" required>
+                            <div class="invalid-feedback" id="usuarioNomeErro"></div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="usuarioEmail">E-mail</label>
+                            <input type="email" class="form-control" id="usuarioEmail" maxlength="150" required>
+                            <div class="form-text d-none" id="emailFixo">É o e-mail de login: para trocá-lo, altere em Supabase → Authentication → Users.</div>
+                            <div class="invalid-feedback" id="usuarioEmailErro"></div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="usuarioTelefone">Telefone com DDD</label>
+                            <input type="tel" class="form-control" id="usuarioTelefone" inputmode="numeric" placeholder="(11) 91234-5678" maxlength="15">
+                            <div class="invalid-feedback" id="usuarioTelefoneErro"></div>
+                        </div>
+                        <div id="senhaGroup">
+                            <div class="mb-3">
+                                <label class="form-label" for="usuarioSenha">Senha inicial</label>
+                                <input type="password" class="form-control" id="usuarioSenha" autocomplete="new-password">
+                                <div class="form-text">Pelo menos 8 caracteres, com letras e números. A pessoa pode trocá-la depois em Alterar senha.</div>
+                                <div class="invalid-feedback" id="usuarioSenhaErro"></div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label" for="usuarioSenhaConfirma">Confirme a senha</label>
+                                <input type="password" class="form-control" id="usuarioSenhaConfirma" autocomplete="new-password">
+                                <div class="invalid-feedback" id="usuarioSenhaConfirmaErro"></div>
+                            </div>
+                        </div>
                         <div class="mb-3">
                             <label class="form-label" for="usuarioRole">Nível de acesso</label>
                             <select class="form-select" id="usuarioRole">
-                                <option value="vendedor">Vendedor — registra saídas, visualiza produtos</option>
-                                <option value="estoquista">Estoquista — gerencia produtos, entradas e saídas</option>
-                                <option value="dentista">Dentista (Dr./Dra.) — visualiza dashboard, produtos e histórico
-                                </option>
+                                <option value="comum" selected>Usuário comum — só consulta o dashboard e os produtos</option>
+                                <option value="vendedor">Caixa — registra saídas e vendas no Caixa (PDV)</option>
+                                <option value="estoquista">Estoquista — gerencia produtos, entradas, saídas e compras</option>
+                                <option value="dentista">Cirurgião-dentista — consulta produtos, histórico e lista de compras</option>
                                 <option value="admin">Administrador — acesso total ao sistema</option>
                             </select>
                         </div>
@@ -80,10 +137,11 @@
                             <input class="form-check-input" type="checkbox" id="usuarioAtivo" checked>
                             <label class="form-check-label" for="usuarioAtivo">Ativo</label>
                         </div>
+                        <small class="text-muted d-none" id="avisoProprio">O seu próprio nível de acesso e status ficam bloqueados para você não perder o acesso por engano.</small>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-primary">Salvar</button>
+                        <button type="submit" class="btn btn-primary" id="btnSalvarUsuario">Salvar</button>
                     </div>
                 </form>
             </div>

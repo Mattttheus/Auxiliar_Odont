@@ -173,6 +173,21 @@ export async function listMovimentacoesDesde(dataInicio) {
     ];
 }
 
+/** Saídas a partir de uma data (ou todas, se null). Pagina porque a API devolve no máximo 1000 linhas por consulta. */
+export async function listSaidasConsumo(dataInicio = null) {
+    const TAMANHO = 1000;
+    const linhas = [];
+    for (let inicio = 0; ; inicio += TAMANHO) {
+        let consulta = supabase.from("saidas_produtos").select("produto_id, quantidade")
+            .order("id").range(inicio, inicio + TAMANHO - 1);
+        if (dataInicio) consulta = consulta.gte("data_saida", dataInicio.toISOString());
+        const { data, error } = await consulta;
+        if (error) throw error;
+        linhas.push(...data);
+        if (data.length < TAMANHO) return linhas;
+    }
+}
+
 // ---------- CONFIGURAÇÕES ----------
 export const CONFIG_PADRAO = { dias_alerta_validade: 30, janela_consumo_dias: 90, dias_cobertura: 30, dias_reposicao: 7 };
 
@@ -276,10 +291,28 @@ export async function listUsuarios() {
         id: u.id,
         nome: u.nome,
         email: u.email,
+        telefone: u.telefone || "",
         role: u.role,
         ativo: u.ativo,
+        perfilSolicitado: u.perfil_solicitado || null,
         criadoEm: u.criado_em
     }));
+}
+
+/** Cadastros públicos aguardando aprovação. Zero se a migração v4 não rodou. */
+export async function contarCadastrosPendentes() {
+    const { data, error } = await supabase.from("usuarios").select("id")
+        .eq("ativo", false).not("perfil_solicitado", "is", null);
+    if (error) { if (isMigracaoPendente(error)) return 0; throw error; }
+    return data.length;
+}
+
+/** O primeiro usuário do sistema vira administrador. */
+export async function sistemaSemUsuarios() {
+    const { data, error } = await supabase.rpc("sistema_sem_usuarios");
+    if (!error) return data;
+    if (!isMigracaoPendente(error)) throw error;
+    return (await countUsuarios()) === 0;
 }
 
 export async function countUsuarios() {
@@ -288,17 +321,56 @@ export async function countUsuarios() {
     return count || 0;
 }
 
+/** Sem a migração v4, as colunas telefone e perfil_solicitado ainda não existem. */
+function semColunasV4({ telefone, perfil_solicitado, ...basico }) {
+    return basico;
+}
+
+/** Sem a migração v4, o banco também recusa o nível "Usuário comum". */
+function erroDeUsuario(error) {
+    return error.code === "23514" && /role/.test(error.message || "")
+        ? new Error("O nível Usuário comum depende da migração v4 do banco. Execute legacy-php/database/supabase_migration_v4_usuarios.sql no SQL Editor do Supabase.")
+        : error;
+}
+
 export async function createUsuarioProfile(uid, data) {
     const { error } = await supabase.from("usuarios").insert({ id: uid, ...data });
-    if (error) throw error;
+    if (!error) return;
+    if (!isMigracaoPendente(error)) throw erroDeUsuario(error);
+    const { error: e2 } = await supabase.from("usuarios").insert({ id: uid, ...semColunasV4(data) });
+    if (e2) throw erroDeUsuario(e2);
+}
+
+/**
+ * Perfil de cadastro público: nasce inativo, como Usuário comum, até um admin aprovar.
+ * Sem a migração v4, o banco só aceita o autocadastro como "vendedor"; inativo, ele
+ * também não dá acesso a nada.
+ */
+export async function criarPerfilPendente(uid, data) {
+    const { error } = await supabase.from("usuarios").insert({ id: uid, ...data, role: "comum", ativo: false });
+    if (!error) return;
+    if (!isMigracaoPendente(error)) throw error;
+    const { error: e2 } = await supabase.from("usuarios").insert({ id: uid, ...semColunasV4(data), role: "vendedor", ativo: false });
+    if (e2) throw e2;
 }
 
 export async function updateUsuario(id, data) {
     const { error } = await supabase.from("usuarios").update(data).eq("id", id);
-    if (error) throw error;
+    if (!error) return;
+    if (!isMigracaoPendente(error)) throw erroDeUsuario(error);
+    const { error: e2 } = await supabase.from("usuarios").update(semColunasV4(data)).eq("id", id);
+    if (e2) throw erroDeUsuario(e2);
 }
 
-export async function deleteUsuarioProfile(id) {
-    const { error } = await supabase.from("usuarios").delete().eq("id", id);
-    if (error) throw error;
+/**
+ * Exclui o login e o perfil. Devolve false se só o perfil pôde ser removido (migração
+ * v4 pendente): nesse caso, a conta de login continua existindo no Supabase.
+ */
+export async function excluirUsuario(id) {
+    const { error } = await supabase.rpc("excluir_usuario", { p_usuario_id: id });
+    if (!error) return true;
+    if (!isMigracaoPendente(error)) throw error;
+    const { error: e2 } = await supabase.from("usuarios").delete().eq("id", id);
+    if (e2) throw e2;
+    return false;
 }

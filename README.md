@@ -5,6 +5,54 @@ Aplicação 100% estática (HTML + CSS + JavaScript) hospedada no **GitHub Pages
 não executa PHP nem hospeda MySQL. A versão original em PHP/MySQL foi preservada em
 [legacy-php/](legacy-php/) apenas como referência histórica.
 
+## Endereço oficial
+
+**<https://mattttheus.github.io/Auxiliar_Odont/>** é o endereço fixo do sistema, igual para
+todos, em qualquer rede. Não há IP para configurar: o GitHub Pages não oferece IP exclusivo,
+e o IP do computador local (WAMP) só funciona na mesma rede, com o computador ligado e sem
+HTTPS, o que também impede a câmera de ler QR Codes.
+
+**O site abre, mas ninguém consegue entrar?** Veja se o projeto está pausado em
+<https://supabase.com/dashboard> e clique em *Resume project*. O plano gratuito pausa o
+projeto após uma semana sem atividade, e o endereço do banco deixa de existir enquanto isso. A rotina
+[manter-supabase-ativo.yml](.github/workflows/manter-supabase-ativo.yml) evita a pausa
+consultando o banco a cada 3 dias e avisa por e-mail se ele não responder.
+
+**Senha do administrador:** ninguém consegue vê-la, pois o Supabase guarda só uma versão
+criptografada, e ela nunca deve ficar no site ou neste repositório, que são públicos. Para saber
+quem é o administrador, rode no SQL Editor `select nome, email from usuarios where role = 'admin';`.
+Para criar uma senha nova, use *Esqueci minha senha* na tela de login.
+
+## Acesso na rede local (WAMP)
+
+Com o WAMP ligado, os aparelhos da rede `192.168.1.x` acessam pelo IP fixo do Wi-Fi deste computador:
+
+| Endereço | O que é | Banco |
+|---|---|---|
+| `http://192.168.1.51/Auxiliar_Odont/` | Sistema atual, com curva ABC, níveis e QR Code | Supabase: precisa de internet e do projeto ativo |
+| `http://192.168.1.51/Auxiliar_Odont/legacy-php/` | Versão antiga em PHP, mais simples, com níveis admin e user | MySQL local: funciona sem internet |
+
+O banco da versão antiga é o `auxiliar_odont`, visível em <http://localhost/phpmyadmin/> (usuário `root`, sem
+senha, acessível só deste computador). Para recriá-lo, importe
+[estoque_db.sql](legacy-php/database/estoque_db.sql) e depois
+[auxiliar_odont_dados_planilha.sql](legacy-php/database/auxiliar_odont_dados_planilha.sql), com os 96 produtos e
+as saídas da planilha. Os dois bancos não trocam dados entre si. O `estoque_db` deste computador é do projeto
+Auxiliar_Obras e não deve ser alterado.
+
+## Níveis de usuário
+
+| Permissão | Administrador | Cirurgião-dentista | Estoquista | Caixa | Usuário comum |
+|---|---|---|---|---|---|
+| Dashboard e consulta de produtos | Sim | Sim | Sim | Sim | Sim |
+| Histórico | Sim | Sim | Sim | Sim | Não |
+| Registrar saídas e vendas | Sim | Não | Sim | Sim | Não |
+| Ver lista de compras | Sim | Sim | Sim | Não | Não |
+| Produtos, entradas, etiquetas QR e salvar/receber compras | Sim | Não | Sim | Não | Não |
+| Usuários, critérios, curva ABC e controle de acesso | Sim | Não | Não | Não | Não |
+
+Internamente, o nível Caixa continua gravado como `vendedor` no banco. O nível Usuário comum
+depende da migração v4.
+
 ## Como publicar no GitHub Pages
 
 1. **Crie um projeto no Supabase** (gratuito): <https://supabase.com/dashboard>
@@ -34,15 +82,22 @@ não executa PHP nem hospeda MySQL. A versão original em PHP/MySQL foi preserva
       recebimento (`receber_lista_compra`), e índices. Sem ela o sistema continua
       funcionando no modo antigo, mas lotes, listas de compra e critérios ficam
       indisponíveis (a tela avisa).
+   5. [legacy-php/database/supabase_migration_v4_usuarios.sql](legacy-php/database/supabase_migration_v4_usuarios.sql)
+      — **depois de publicar o site**: nível Usuário comum, telefone e nível solicitado
+      no perfil, aprovação de cadastros garantida no banco, bloqueio de contas inativas
+      pela API e exclusão completa de usuários (`excluir_usuario`).
 4. Em **Settings → API Keys**, copie a **Project URL** e a chave **anon/publishable**
    (NUNCA a `service_role`/secret) e cole em
    [assets/js/supabase-config.js](assets/js/supabase-config.js).
-5. Faça commit e push para o branch `main`.
-6. No GitHub, vá em **Settings → Pages** e selecione **Deploy from a branch → main → / (root)**.
-7. Acesse `https://mattttheus.github.io/Auxiliar_Odont/`, cadastre-se em **Criar conta**
+5. Em **Authentication → URL Configuration**, defina **Site URL** como
+   `https://mattttheus.github.io/Auxiliar_Odont/` e adicione
+   `https://mattttheus.github.io/Auxiliar_Odont/**` em **Redirect URLs**. Sem isso, os
+   links de confirmação de e-mail e de nova senha não voltam para o sistema.
+6. Faça commit e push para o branch `main`.
+7. No GitHub, vá em **Settings → Pages** e selecione **Deploy from a branch → main → / (root)**.
+8. Acesse `https://mattttheus.github.io/Auxiliar_Odont/`, cadastre-se em **Criar conta**
    (o primeiro usuário criado vira administrador automaticamente; a partir do segundo,
-   todo novo cadastro nasce como "vendedor" e só um admin pode promovê-lo depois, em
-   **Usuários**).
+   todo novo cadastro fica aguardando a aprovação de um admin, em **Usuários**).
 
 ## Funcionalidades (alinhadas ao Relatório Final)
 
@@ -56,6 +111,9 @@ não executa PHP nem hospeda MySQL. A versão original em PHP/MySQL foi preserva
 | Alertas de validade e reposição | Menu lateral e Dashboard, com prazo de validade configurável |
 | Lista de compras automática | **Lista de Compras**: estoque mínimo + consumo real + lotes vencendo, critérios ajustáveis (admin), listas salvas, recebimento dá entrada no estoque |
 | Relatórios com análise de dados | Dashboard (movimentações 30 dias, mais consumidos, situação por categoria) e CSV |
+| Precedência do estoque (somente admin) | **Controle e Curva ABC**: classifica todos os produtos em A (até 80% do consumo), B (até 95%) e C pelo consumo real no período, com curva, filtros e CSV. Não exige migração |
+| Controle de acesso (somente admin) | **Controle e Curva ABC**: troca de perfil, ativação/desativação de usuários e matriz do que cada perfil pode fazer. A conta desativada perde o acesso na próxima página aberta |
+| Cadastro e gestão de usuários | **Criar conta** com dados validados (nome completo, e-mail, telefone, nível solicitado, senha forte) e aprovação por um admin; **Usuários** com aprovação, busca, filtros e redefinição de senha; **Esqueci minha senha** e **Alterar senha** para todos |
 
 ## Limitações do modelo 100% estático
 
@@ -64,8 +122,11 @@ não executa PHP nem hospeda MySQL. A versão original em PHP/MySQL foi preserva
 - Criar contas de outros usuários (tela Usuários, admin) exige que o admin esteja logado
   no navegador; é feito via client Supabase secundário (sem persistir sessão) para não
   derrubar a sessão do admin.
-- Excluir um usuário remove apenas o perfil na tabela `usuarios`; a conta de login deve
-  ser removida manualmente em *Supabase → Authentication → Users*.
+- Excluir um usuário remove o login e o perfil. Sem a migração v4, remove só o perfil: a
+  conta de login deve ser removida em *Supabase → Authentication → Users* e, se a pessoa
+  entrar antes disso, volta como cadastro aguardando aprovação.
+- O e-mail de login não pode ser alterado pela tela: o navegador não tem permissão para
+  isso. Altere em *Supabase → Authentication → Users*.
 - Redefinição de senha de terceiros é feita por e-mail (`resetPasswordForEmail`).
 - O banco impede remover, desativar ou rebaixar o **último** administrador ativo, e
   impede que um usuário comum altere a própria `role`/`ativo` mesmo chamando a API

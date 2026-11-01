@@ -1,0 +1,32 @@
+# O plano gratuito do Supabase pausa o projeto sem atividade por uma semana, e aí o
+# sistema fica fora do ar para todos. Esta rotina faz uma consulta a cada 3 dias. Se o
+# banco não responder, a execução falha e o GitHub avisa por e-mail o dono do repositório.
+# O GitHub suspende rotinas agendadas após 60 dias sem commits no repositório e avisa
+# por e-mail: basta reativar em Actions.
+name: Manter Supabase ativo
+
+on:
+  schedule:
+    - cron: "17 9 */3 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  consultar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Consultar o banco
+        run: |
+          URL=$(grep -oE 'https://[a-z0-9]+\.supabase\.co' assets/js/supabase-config.js)
+          KEY=$(sed -nE 's/.*SUPABASE_ANON_KEY = "([^"]+)".*/\1/p' assets/js/supabase-config.js)
+          CODIGO=$(curl --silent --output /dev/null --max-time 30 --retry 3 --write-out '%{http_code}' \
+            -H "apikey: $KEY" "$URL/rest/v1/produtos?select=id&limit=1" || true)
+          echo "Resposta do banco: $CODIGO"
+          if [ "$CODIGO" = "000" ] || [ "$CODIGO" -ge 500 ]; then
+            echo "::error::O Supabase não respondeu. Veja se o projeto está pausado em https://supabase.com/dashboard"
+            exit 1
+          fi

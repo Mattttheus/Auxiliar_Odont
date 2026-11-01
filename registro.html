@@ -32,29 +32,64 @@
         <div class="text-center mb-3">
             <i class="bi bi-person-plus-fill" style="font-size:50px;color:#5b21b6;"></i>
             <h3 class="fw-bold mt-2">Criar Conta</h3>
-            <p class="text-muted">Sistema de Controle de Estoque</p>
+            <p class="text-muted mb-0" id="subtitulo">Depois do cadastro, um administrador libera o seu acesso.</p>
         </div>
 
-        <div class="alert alert-danger d-none" id="errorAlert"></div>
+        <div class="alert alert-danger d-none" id="errorAlert" role="alert"></div>
 
-        <form id="registroForm">
+        <form id="registroForm" novalidate>
             <div class="mb-3">
-                <label class="form-label">Nome</label>
-                <input class="form-control" name="nome" id="nome" required>
+                <label class="form-label" for="nome">Nome completo</label>
+                <input class="form-control" id="nome" autocomplete="name" maxlength="100" required>
+                <div class="invalid-feedback" id="nomeErro"></div>
             </div>
             <div class="mb-3">
-                <label class="form-label">E-mail</label>
-                <input type="email" class="form-control" name="email" id="email" required>
+                <label class="form-label" for="email">E-mail</label>
+                <input type="email" class="form-control" id="email" autocomplete="email" maxlength="150" required>
+                <div class="invalid-feedback" id="emailErro"></div>
             </div>
             <div class="mb-3">
-                <label class="form-label">Senha</label>
-                <input type="password" class="form-control" name="senha" id="senha" minlength="6" required>
+                <label class="form-label" for="telefone">Telefone com DDD</label>
+                <input type="tel" class="form-control" id="telefone" autocomplete="tel" inputmode="numeric" placeholder="(11) 91234-5678" maxlength="15" required>
+                <div class="invalid-feedback" id="telefoneErro"></div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="perfilSolicitado">Nível de usuário solicitado</label>
+                <select class="form-select" id="perfilSolicitado" required>
+                    <option value="">Selecione</option>
+                    <option value="dentista">Cirurgião-dentista: consulta estoque e lista de compras</option>
+                    <option value="estoquista">Estoquista: cuida de produtos, entradas e saídas</option>
+                    <option value="vendedor">Caixa: registra saídas e vendas</option>
+                    <option value="comum">Usuário comum: só consulta</option>
+                </select>
+                <div class="invalid-feedback" id="perfilSolicitadoErro"></div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="senha">Senha</label>
+                <input type="password" class="form-control" id="senha" autocomplete="new-password" required>
+                <div class="form-text">Pelo menos 8 caracteres, com letras e números.</div>
+                <div class="invalid-feedback" id="senhaErro"></div>
+            </div>
+            <div class="mb-2">
+                <label class="form-label" for="confirmarSenha">Confirme a senha</label>
+                <input type="password" class="form-control" id="confirmarSenha" autocomplete="new-password" required>
+                <div class="invalid-feedback" id="confirmarSenhaErro"></div>
+            </div>
+            <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" id="mostrarSenha">
+                <label class="form-check-label" for="mostrarSenha">Mostrar senha</label>
             </div>
             <button class="btn btn-primary w-100" id="btnRegistrar">Cadastrar</button>
         </form>
 
+        <div class="text-center d-none" id="sucesso">
+            <i class="bi bi-check-circle-fill text-success" style="font-size:40px;"></i>
+            <h5 class="mt-2" id="sucessoTitulo"></h5>
+            <p class="text-muted" id="sucessoTexto"></p>
+        </div>
+
         <div class="text-center mt-3">
-            <a href="index.html">Já tenho conta, entrar</a>
+            <a href="index.html">Voltar para o login</a>
         </div>
     </div>
 

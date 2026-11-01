@@ -1,5 +1,5 @@
 // Histórico de ações e saídas de estoque (equivalente a pages/historico/*.php).
-import { requireAuth } from "./auth.js";
+import { requirePermission } from "./permissions.js";
 import { renderShell } from "./layout.js";
 import { listHistorico, listSaidas } from "./data.js";
 import { formatDateTimeBR, downloadCsv, escapeHtml } from "./utils.js";
@@ -23,7 +23,7 @@ const ORIGEM = {
     ajuste: "Ajuste"
 };
 
-const user = await requireAuth();
+const user = await requirePermission("historico");
 if (user) {
     renderShell("historico.html", user);
 

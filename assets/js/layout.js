@@ -2,8 +2,9 @@
 import { logout } from "./auth.js";
 import { can, roleLabel, roleBadgeClass } from "./permissions.js";
 import { supabase } from "./supabase-init.js";
-import { getConfiguracoes } from "./data.js";
+import { getConfiguracoes, contarCadastrosPendentes } from "./data.js";
 import { calcularAlertas } from "./alertas.js";
+import { escapeHtml } from "./utils.js";
 
 const MENU_ITEMS = [
     { href: "dashboard.html", icon: "bi-house-door", label: "Dashboard", perm: null },
@@ -14,6 +15,7 @@ const MENU_ITEMS = [
     { href: "etiquetas.html", icon: "bi-qr-code", label: "Etiquetas QR", perm: "etiquetas" },
     { href: "historico.html", icon: "bi-clock-history", label: "Histórico", perm: "historico" },
     { href: "usuarios.html", icon: "bi-people", label: "Usuários", perm: "usuarios" },
+    { href: "controle.html", icon: "bi-shield-check", label: "Controle e Curva ABC", perm: "controle" },
     { href: "sobre.html", icon: "bi-info-circle", label: "Sobre o projeto", perm: null }
 ];
 
@@ -32,7 +34,7 @@ export function renderShell(activePage, user) {
       <div class="sidebar-user">
         <div class="sidebar-user-avatar"><i class="bi bi-person-fill"></i></div>
         <div>
-          <div class="sidebar-user-name">Olá, ${user.nome}</div>
+          <div class="sidebar-user-name">Olá, ${escapeHtml(user.nome)}</div>
           <span class="badge ${roleBadgeClass(user.role)}">${roleLabel(user.role)}</span>
         </div>
       </div>` : "";
@@ -58,6 +60,7 @@ export function renderShell(activePage, user) {
         </div>
       </div>
       <hr />
+      <a href="nova-senha.html"><i class="bi bi-key"></i> Alterar senha</a>
       <a href="#" id="logoutLink"><i class="bi bi-box-arrow-right"></i> Sair</a>
     </div>`;
 
@@ -80,13 +83,14 @@ async function carregarAlertasSidebar(user) {
     const box = document.getElementById("sidebarAlertas");
     if (!box) return;
     try {
-        const [{ data, error }, cfg] = await Promise.all([
+        const [{ data, error }, cfg, pendentes] = await Promise.all([
             supabase.from("produtos").select("id, quantidade, estoque_minimo, validade"),
-            getConfiguracoes()
+            getConfiguracoes(),
+            can(user, "usuarios") ? contarCadastrosPendentes() : 0
         ]);
         if (error) throw error;
         const a = calcularAlertas(data, cfg);
-        if (a.total === 0) {
+        if (a.total === 0 && pendentes === 0) {
             box.innerHTML = `<div class="sidebar-alertas ok"><i class="bi bi-check-circle"></i> Estoque sem alertas</div>`;
             return;
         }
@@ -96,6 +100,7 @@ async function carregarAlertasSidebar(user) {
         box.innerHTML = `
         <div class="sidebar-alertas">
           <div class="sidebar-alertas-titulo"><i class="bi bi-bell-fill"></i> Alertas</div>
+          ${chip("usuarios.html", "chip-warning", "bi-person-plus", pendentes, "cadastro(s) aguardando")}
           ${chip("produtos.html?filter=vencidos", "chip-danger", "bi-exclamation-octagon", a.vencidos.length, "vencido(s)")}
           ${chip("produtos.html?filter=prestes", "chip-warning", "bi-hourglass-split", a.vencendo.length, `vence(m) em ${cfg.dias_alerta_validade}d`)}
           ${chip(destinoBaixo, "chip-info", "bi-graph-down-arrow", a.baixo.length, "abaixo do mínimo")}
@@ -163,6 +168,7 @@ function setupVoice() {
 
 function handleVoiceCommand(text) {
     const ir = (href) => { window.location.href = href; };
+    if (text.includes("curva") || text.includes("abc") || text.includes("controle")) return ir("controle.html");
     if (text.includes("dashboard") || text.includes("painel") || text.includes("início") || text.includes("inicio")) return ir("dashboard.html");
     if (text.includes("compra") || text.includes("repor") || text.includes("reposição") || text.includes("reposicao")) return ir("compras.html");
     if (text.includes("etiqueta")) return ir("etiquetas.html");
