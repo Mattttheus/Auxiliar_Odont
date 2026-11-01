@@ -105,8 +105,17 @@
     <script type="module">
         import { requireAuth } from "./assets/js/auth.js";
         import { renderShell } from "./assets/js/layout.js";
+        import { can } from "./assets/js/permissions.js";
         const user = await requireAuth();
-        if (user) renderShell("sobre.html", user);
+        if (user) {
+            renderShell("sobre.html", user);
+            // Quem não pode abrir a tela vê só o nome dela, em vez de voltar ao Dashboard sem aviso.
+            const PERMISSAO = { "movimentar.html": "movimentar", "caixa.html": "saida", "historico.html": "historico", "etiquetas.html": "etiquetas", "compras.html": "compras" };
+            document.querySelectorAll(".main-content a[href]").forEach(a => {
+                const acao = PERMISSAO[a.getAttribute("href")];
+                if (acao && !can(user, acao)) a.replaceWith(a.textContent);
+            });
+        }
     </script>
 </body>
 

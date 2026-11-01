@@ -59,7 +59,7 @@
                     </a>
                 </div>
                 <div class="col-12 col-lg">
-                    <a href="historico.html" class="text-decoration-none">
+                    <a href="historico.html" class="text-decoration-none" id="linkSaidas">
                         <div class="card shadow border-0 rounded-4 p-3 h-100">
                             <h6 class="text-muted">Saídas (30 dias)</h6>
                             <h2 id="statSaidas30" class="mb-0">0</h2>
@@ -81,6 +81,7 @@
                     <div class="card shadow border-0 rounded-4 p-4 h-100">
                         <h5><i class="bi bi-fire text-primary"></i> Mais consumidos</h5>
                         <small class="text-muted" id="subConsumo">Unidades que saíram</small>
+                        <a class="small d-block d-none" href="controle.html" id="linkCurvaAbc"><i class="bi bi-bar-chart-steps"></i> Ver a curva ABC completa</a>
                         <div class="chart-box"><canvas id="chartConsumo" aria-label="Produtos mais consumidos" role="img"></canvas></div>
                     </div>
                 </div>
@@ -91,12 +92,14 @@
                     <div class="card shadow border-0 rounded-4 p-4 h-100">
                         <h5><i class="bi bi-bar-chart text-primary"></i> Entradas e saídas por mês</h5>
                         <small class="text-muted" id="subMensal">Unidades por mês</small>
+                        <a class="small d-block d-none" href="historico.html" id="linkHistoricoMensal"><i class="bi bi-clock-history"></i> Ver o histórico</a>
                         <div class="chart-box"><canvas id="chartMensal" aria-label="Entradas e saídas por mês do ano" role="img"></canvas></div>
                     </div>
                 </div>
                 <div class="col-lg-5">
                     <div class="card shadow border-0 rounded-4 p-4 h-100">
                         <h5><i class="bi bi-cart-plus text-danger"></i> Itens que precisam de reposição <span class="badge bg-secondary" id="qtdReposicao">0</span></h5>
+                        <a class="small mb-2 d-block d-none" href="compras.html" id="linkComprasReposicao"><i class="bi bi-cart-check"></i> Abrir a Lista de Compras</a>
                         <div class="table-responsive" style="max-height:340px">
                             <table class="table table-sm align-middle mb-0">
                                 <thead><tr><th>Código</th><th>Item</th><th>Qtd</th><th>Mín.</th><th>Status</th></tr></thead>

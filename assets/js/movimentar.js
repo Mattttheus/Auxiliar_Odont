@@ -3,7 +3,7 @@
 import { requirePermission, can } from "./permissions.js";
 import { renderShell } from "./layout.js";
 import { listProdutos, getProduto, getProdutoByCodigoBarras, listLotes, registrarMovimentacao } from "./data.js";
-import { formatDateBR, escapeHtml } from "./utils.js";
+import { formatDateBR, escapeHtml, linkProduto } from "./utils.js";
 import { estoqueMinimo } from "./alertas.js";
 import { iniciarLeitorContinuo, DICA_LEITURA } from "./scanner.js";
 
@@ -68,10 +68,17 @@ function aplicarTipo() {
     document.getElementById("modoRapido").disabled = entrada;
 }
 
-function mostrarStatus(msg, tipoAlerta = "warning") {
+function mostrarStatus(msg, tipoAlerta = "warning", link = null) {
     const el = document.getElementById("leitorStatus");
     el.className = `alert alert-${tipoAlerta} small mb-2`;
     el.textContent = msg;
+    if (link) {
+        const a = document.createElement("a");
+        a.href = link.href;
+        a.className = "alert-link ms-1";
+        a.textContent = link.texto;
+        el.append(a);
+    }
 }
 
 async function alternarCamera() {
@@ -156,7 +163,7 @@ async function mostrarProduto(produto) {
     document.getElementById("cardVazio").classList.add("d-none");
     document.getElementById("cardProduto").classList.remove("d-none");
     document.getElementById("pCodigo").textContent = produto.codigo_barras ? `Código ${produto.codigo_barras}` : "Sem código cadastrado";
-    document.getElementById("pNome").textContent = produto.nome;
+    document.getElementById("pNome").innerHTML = linkProduto(produto);
     document.getElementById("pLocal").textContent = produto.localizacao || "Localização não informada";
     document.getElementById("pEstoque").textContent = `${produto.quantidade} ${produto.unidade || ""}`;
     document.getElementById("pMinimo").textContent = `Mínimo: ${estoqueMinimo(produto)}`;
@@ -207,7 +214,8 @@ async function confirmar() {
             const i = produtosCache.findIndex(p => String(p.id) === String(atualizado.id));
             if (i >= 0) produtosCache[i] = atualizado;
             if (atualizado.quantidade <= estoqueMinimo(atualizado)) {
-                mostrarStatus(`"${atualizado.nome}" ficou com ${atualizado.quantidade} un., no mínimo ou abaixo. Ele aparece na Lista de Compras.`, "info");
+                mostrarStatus(`"${atualizado.nome}" ficou com ${atualizado.quantidade} un., no mínimo ou abaixo.`, "info",
+                    can(user, "compras") ? { href: "compras.html", texto: "Abrir a Lista de Compras" } : null);
             }
         }
         limparProduto();

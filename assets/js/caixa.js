@@ -1,9 +1,10 @@
 // Caixa (PDV): venda rápida com carrinho, escaneando ou selecionando produtos.
-import { requirePermission } from "./permissions.js";
+import { requirePermission, can } from "./permissions.js";
 import { renderShell } from "./layout.js";
 import { listProdutos, getProdutoByCodigoBarras, registrarVenda } from "./data.js";
 import { formatMoneyBR, escapeHtml } from "./utils.js";
 import { abrirScanner } from "./scanner.js";
+import { statusEstoque } from "./alertas.js";
 
 let produtosCache = [];
 let carrinho = []; // { produtoId, nome, preco, quantidade, estoqueDisponivel }
@@ -97,8 +98,21 @@ function scanEAdicionar() {
     });
 }
 
+/** Confirma a venda e avisa quais itens vendidos agora precisam de reposição. */
+function mostrarVendaConcluida(aRepor) {
+    const reposicao = aRepor.length === 0 ? "" : `
+      <div class="mt-1">Precisam de reposição: ${aRepor.map(p => `${escapeHtml(p.nome)} (${statusEstoque(p).label})`).join(", ")}.
+      ${can(user, "compras") ? `<a class="alert-link" href="compras.html">Abrir a Lista de Compras</a>` : "Avise o estoquista."}</div>`;
+    document.getElementById("caixaAviso").innerHTML = `
+    <div class="alert alert-success">
+      <i class="bi bi-check-circle"></i> Venda finalizada com sucesso.
+      <a class="alert-link" href="historico.html">Ver no Histórico</a>${reposicao}
+    </div>`;
+}
+
 async function finalizarVenda() {
     if (carrinho.length === 0) return alert("Carrinho vazio.");
+    document.getElementById("caixaAviso").innerHTML = "";
     for (const item of carrinho) {
         if (item.quantidade > item.estoqueDisponivel) {
             return alert(`Estoque insuficiente para "${item.nome}". Disponível: ${item.estoqueDisponivel}`);
@@ -112,11 +126,12 @@ async function finalizarVenda() {
     try {
         // Uma única transação no banco: ou todos os itens saem, ou nenhum.
         await registrarVenda(carrinho);
-        alert("Venda finalizada com sucesso!");
+        const vendidos = carrinho.map(i => String(i.produtoId));
         carrinho = [];
         produtosCache = await listProdutos();
         preencherSelect();
         renderCarrinho();
+        mostrarVendaConcluida(produtosCache.filter(p => vendidos.includes(String(p.id)) && statusEstoque(p).codigo !== "normal"));
     } catch (err) {
         alert("Erro ao finalizar venda: " + err.message);
     } finally {

@@ -61,6 +61,11 @@ export function downloadCsv(filename, headerRow, rows) {
     URL.revokeObjectURL(url);
 }
 
+/** Link que abre a tela de Produtos já filtrada neste item, a partir de qualquer tela. */
+export function linkProduto({ nome, codigo_barras }) {
+    return `<a class="link-produto" href="produtos.html?q=${encodeURIComponent(codigo_barras || nome)}">${escapeHtml(nome)}</a>`;
+}
+
 export function escapeHtml(str) {
     const div = document.createElement("div");
     div.textContent = str ?? "";

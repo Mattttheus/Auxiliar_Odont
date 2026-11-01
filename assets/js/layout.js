@@ -62,7 +62,7 @@ export function renderShell(activePage, user) {
         </div>
       </div>
       <hr />
-      <a href="nova-senha.html"><i class="bi bi-key"></i> Alterar senha</a>
+      <a href="nova-senha.html" class="${activePage === "nova-senha.html" ? "active" : ""}"><i class="bi bi-key"></i> Alterar senha</a>
       <a href="#" id="logoutLink"><i class="bi bi-box-arrow-right"></i> Sair</a>
     </div>`;
 
@@ -171,6 +171,7 @@ function setupVoice() {
 function handleVoiceCommand(text) {
     const ir = (href) => { window.location.href = href; };
     if (text.includes("curva") || text.includes("abc") || text.includes("controle")) return ir("controle.html");
+    if (text.includes("senha")) return ir("nova-senha.html");
     if (text.includes("dashboard") || text.includes("painel") || text.includes("início") || text.includes("inicio")) return ir("dashboard.html");
     if (text.includes("compra") || text.includes("repor") || text.includes("reposição") || text.includes("reposicao")) return ir("compras.html");
     if (text.includes("etiqueta")) return ir("etiquetas.html");

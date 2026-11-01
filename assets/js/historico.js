@@ -2,7 +2,7 @@
 import { requirePermission } from "./permissions.js";
 import { renderShell } from "./layout.js";
 import { listHistorico, listSaidas } from "./data.js";
-import { formatDateTimeBR, downloadCsv, escapeHtml } from "./utils.js";
+import { formatDateTimeBR, downloadCsv, escapeHtml, linkProduto } from "./utils.js";
 
 const BADGE_ACAO = {
     "Entrada": "bg-success",
@@ -35,6 +35,8 @@ if (user) {
         document.getElementById("btnExportHistorico").addEventListener("click", exportarHistoricoCsv);
         ["filtroAcao", "filtroPeriodo"].forEach(id => document.getElementById(id).addEventListener("change", renderHistorico));
         document.getElementById("filtroTexto").addEventListener("input", renderHistorico);
+        // A tela de Produtos e a conferência de saldo abrem o histórico já filtrado em um item.
+        document.getElementById("filtroTexto").value = new URLSearchParams(window.location.search).get("q") || "";
         try {
             [historicoCache, saidasCache] = await Promise.all([listHistorico(), listSaidas()]);
         } catch (err) {
@@ -74,7 +76,7 @@ if (user) {
         document.getElementById("historicoTableBody").innerHTML = lista.map(h => `
     <tr>
       <td>${escapeHtml(h.usuarioNome || "Usuário removido")}</td>
-      <td>${escapeHtml(h.produtoNome || "Produto removido")}</td>
+      <td>${h.produtoId ? linkProduto({ nome: h.produtoNome }) : escapeHtml(h.produtoNome)}</td>
       <td><span class="badge ${BADGE_ACAO[h.acao] || "bg-secondary"}">${escapeHtml(h.acao)}</span></td>
       <td>${escapeHtml(h.descricao || "")}</td>
       <td><small class="text-muted">${escapeHtml(ORIGEM[h.origem] || h.origem || "-")}</small></td>
@@ -86,7 +88,7 @@ if (user) {
         document.getElementById("statTotalSaidas").textContent = saidasCache.length;
         document.getElementById("saidasTableBody").innerHTML = saidasCache.map(s => `
     <tr>
-      <td>${escapeHtml(s.produtoNome)}</td>
+      <td>${linkProduto({ nome: s.produtoNome })}</td>
       <td>${s.quantidade}</td>
       <td>${escapeHtml(s.usuarioNome || "Usuário removido")}</td>
       <td><small>${escapeHtml(s.lote || "-")}</small></td>

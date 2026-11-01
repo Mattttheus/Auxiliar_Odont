@@ -23,7 +23,10 @@ if (user) {
     const podeSaida = can(user, "saida");
 
     document.getElementById("btnNovoProduto").classList.toggle("d-none", !podeEditar);
+    document.getElementById("btnEntrada").classList.toggle("d-none", !podeEntrada);
+    document.getElementById("btnSaida").classList.toggle("d-none", !podeSaida);
 
+    let produtoEscolhido = null; // item já escolhido ao abrir Entrada ou Saída pela linha da tabela
     let produtosCache = [];
     let cfg = { dias_alerta_validade: 30 };
     let filtroAtual = "todos";
@@ -50,6 +53,8 @@ if (user) {
         // Botões registrados ANTES do carregamento: se listProdutos() falhar (rede,
         // RLS, schema desatualizado), a tela não deve travar sem nenhum botão responder.
         document.getElementById("btnNovoProduto").addEventListener("click", abrirModalNovoProduto);
+        document.getElementById("btnEntrada").addEventListener("click", () => abrirMovimento("entrada"));
+        document.getElementById("btnSaida").addEventListener("click", () => abrirMovimento("saida"));
         document.getElementById("formProduto").addEventListener("submit", salvarProduto);
         document.getElementById("formEntrada").addEventListener("submit", salvarEntrada);
         document.getElementById("formSaida").addEventListener("submit", salvarSaida);
@@ -177,7 +182,10 @@ if (user) {
       <td>${formatDateBR(p.validade)}</td>
       <td>${statusBadge}</td>
       <td class="text-nowrap">
+        ${podeEntrada ? `<button class="btn btn-sm btn-outline-success btn-entrada" data-id="${p.id}" title="Registrar entrada"><i class="bi bi-box-arrow-in-down"></i></button>` : ""}
+        ${podeSaida ? `<button class="btn btn-sm btn-outline-danger btn-saida" data-id="${p.id}" title="Registrar saída"><i class="bi bi-box-arrow-up"></i></button>` : ""}
         <button class="btn btn-sm btn-outline-secondary btn-lotes" data-id="${p.id}" title="Lotes e validades"><i class="bi bi-layers"></i></button>
+        ${can(user, "historico") ? `<a class="btn btn-sm btn-outline-secondary" href="historico.html?q=${encodeURIComponent(p.nome)}" title="Histórico do produto"><i class="bi bi-clock-history"></i></a>` : ""}
         ${can(user, "etiquetas") ? `<a class="btn btn-sm btn-outline-dark" href="etiquetas.html?ids=${p.id}" title="Etiqueta QR"><i class="bi bi-qr-code"></i></a>` : ""}
         ${podeEditar ? `
         <button class="btn btn-sm btn-primary btn-editar" data-id="${p.id}" title="Editar"><i class="bi bi-pencil"></i></button>
@@ -186,6 +194,10 @@ if (user) {
     </tr>`;
         }).join("") || `<tr><td colspan="10" class="text-center text-muted py-4">Nenhum produto encontrado.</td></tr>`;
 
+        tbody.querySelectorAll(".btn-entrada").forEach(btn =>
+            btn.addEventListener("click", () => abrirMovimento("entrada", btn.dataset.id)));
+        tbody.querySelectorAll(".btn-saida").forEach(btn =>
+            btn.addEventListener("click", () => abrirMovimento("saida", btn.dataset.id)));
         tbody.querySelectorAll(".btn-lotes").forEach(btn =>
             btn.addEventListener("click", () => abrirModalLotes(btn.dataset.id)));
         tbody.querySelectorAll(".btn-editar").forEach(btn =>
@@ -293,8 +305,17 @@ if (user) {
         const options = produtosCache
             .map(p => `<option value="${p.id}">${escapeHtml(p.nome)} (estoque: ${p.quantidade})</option>`)
             .join("");
-        document.getElementById("entradaProdutoId").innerHTML = options;
-        document.getElementById("saidaProdutoId").innerHTML = options;
+        for (const id of ["entradaProdutoId", "saidaProdutoId"]) {
+            const select = document.getElementById(id);
+            select.innerHTML = options;
+            if (produtoEscolhido) select.value = produtoEscolhido;
+        }
+        produtoEscolhido = null;
+    }
+
+    function abrirMovimento(tipo, id = null) {
+        produtoEscolhido = id;
+        new bootstrap.Modal(document.getElementById(tipo === "entrada" ? "modalEntrada" : "modalSaida")).show();
     }
 
     async function salvarEntrada(e) {

@@ -6,7 +6,7 @@ import {
     sugerirListaCompras, getConfiguracoes, updateConfiguracoes,
     listListasCompra, createListaCompra, updateStatusListaCompra, receberListaCompra
 } from "./data.js";
-import { formatDateBR, formatDateTimeBR, downloadCsv, escapeHtml } from "./utils.js";
+import { formatDateBR, formatDateTimeBR, downloadCsv, escapeHtml, linkProduto } from "./utils.js";
 
 const STATUS = {
     aberta: { label: "Aberta", badge: "bg-primary" },
@@ -103,7 +103,7 @@ function renderSugestoes() {
         return `
     <tr class="${marcado ? "" : "no-print text-muted"}">
       <td class="no-print"><input class="form-check-input sel-item" type="checkbox" data-id="${s.produto_id}" ${marcado ? "checked" : ""}></td>
-      <td><strong>${escapeHtml(s.nome)}</strong><br><small class="text-muted">${escapeHtml(s.categoria || "")}${s.localizacao ? ` · ${escapeHtml(s.localizacao)}` : ""}</small></td>
+      <td><strong>${linkProduto(s)}</strong><br><small class="text-muted">${escapeHtml(s.categoria || "")}${s.localizacao ? ` · ${escapeHtml(s.localizacao)}` : ""}</small></td>
       <td class="${Number(s.quantidade) === 0 ? "text-danger fw-bold" : ""}">${s.quantidade} <small class="text-muted">${escapeHtml(s.unidade || "")}</small></td>
       <td>${s.estoque_minimo}</td>
       <td>${s.consumo_diario === null || s.consumo_diario === undefined ? "-" : Number(s.consumo_diario).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}</td>
@@ -186,7 +186,7 @@ function verLista(lista) {
     <table class="table table-sm">
       <thead><tr><th>Produto</th><th>Unidade</th><th>Sugerido</th><th>Pedido</th><th>Motivo</th></tr></thead>
       <tbody>${lista.itens.map(i => `
-        <tr><td>${escapeHtml(i.produto_nome)}</td><td>${escapeHtml(i.unidade || "-")}</td>
+        <tr><td>${i.produto_id ? linkProduto({ nome: i.produto_nome }) : escapeHtml(i.produto_nome)}</td><td>${escapeHtml(i.unidade || "-")}</td>
         <td>${i.quantidade_sugerida}</td><td><strong>${i.quantidade}</strong></td><td><small>${escapeHtml(i.motivo || "")}</small></td></tr>`).join("")}
       </tbody>
     </table>`;
@@ -207,7 +207,7 @@ async function receber(lista) {
     if (!confirm(`Receber a lista "${lista.titulo}"? Será registrada a entrada de ${lista.itens.length} item(ns) no estoque, com as quantidades pedidas.`)) return;
     try {
         const n = await receberListaCompra(lista.id);
-        mensagem(`Lista recebida: entrada registrada para ${n} item(ns). Para controlar a validade, informe o lote em Movimentar (QR) nas próximas entradas.`, "success");
+        mensagem(`Lista recebida: entrada registrada para ${n} item(ns). <a class="alert-link" href="historico.html">Ver no Histórico</a>. Para controlar a validade, informe o lote nas próximas entradas em <a class="alert-link" href="movimentar.html?tipo=entrada">Movimentar (QR)</a>.`, "success");
         await Promise.all([carregarListas(), carregarSugestoes()]);
     } catch (err) {
         mensagem("Erro ao receber lista: " + escapeHtml(err.message), "danger");

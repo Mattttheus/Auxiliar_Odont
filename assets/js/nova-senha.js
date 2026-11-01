@@ -1,6 +1,7 @@
 // Alterar a própria senha: pede a senha atual para confirmar quem está no computador.
 import { apiPost } from "./api.js";
 import { requireAuth } from "./auth.js";
+import { renderShell } from "./layout.js";
 import { validarSenha, validarConfirmacaoSenha, marcarCampo } from "./validacao.js";
 
 const form = document.getElementById("senhaForm");
@@ -40,6 +41,7 @@ form.addEventListener("submit", async (e) => {
 
 const user = await requireAuth();
 if (user) {
+    renderShell("nova-senha.html", user);
     document.getElementById("contaAtual").textContent = `Conta: ${user.email}`;
     form.classList.remove("d-none");
 }

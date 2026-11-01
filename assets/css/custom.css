@@ -485,6 +485,23 @@ body.theme-dark footer {
     color: #475569;
 }
 
+/* ===== LINK PARA O PRODUTO, usado em todas as telas ===== */
+
+.link-produto {
+    color: inherit;
+    text-decoration: none;
+    border-bottom: 1px dotted currentColor;
+}
+
+.link-produto:hover {
+    color: #2563eb;
+    border-bottom-style: solid;
+}
+
+body.theme-dark .link-produto:hover {
+    color: #60a5fa;
+}
+
 /* ===== CURVA ABC (rampa azul ordenada: A é a classe de maior destaque) ===== */
 
 .abc-a { background: #104281; color: #fff; }

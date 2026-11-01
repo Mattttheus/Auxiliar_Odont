@@ -86,6 +86,7 @@ export async function listHistorico() {
     return linhas.map(h => ({
         id: h.id,
         usuarioNome: h.usuario_nome || "Usuário removido",
+        produtoId: h.produto_id,
         produtoNome: h.produto_nome || "Produto removido",
         acao: h.acao,
         descricao: h.descricao,

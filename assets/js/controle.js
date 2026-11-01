@@ -3,7 +3,7 @@
 import { requirePermission, can, ROLES, PERMISSOES, roleLabel, roleBadgeClass } from "./permissions.js";
 import { renderShell } from "./layout.js";
 import { listProdutos, listSaidasConsumo, listUsuarios, updateUsuario, conferirSaldos } from "./data.js";
-import { downloadCsv, escapeHtml } from "./utils.js";
+import { downloadCsv, escapeHtml, linkProduto } from "./utils.js";
 import { estoqueMinimo, statusEstoque, badgeEstoque } from "./alertas.js";
 import { calcularCurvaAbc, LIMITE_A, LIMITE_B } from "./curva-abc.js";
 
@@ -43,6 +43,8 @@ if (user) {
       <span><span class="abc-chave abc-b"></span> Classe B: de ${LIMITE_A}% a ${LIMITE_B}%</span>
       <span><span class="abc-chave abc-c"></span> Classe C: restante, inclui produtos sem saídas</span>`;
     document.getElementById("conferenciaTodos").addEventListener("change", renderConferencia);
+    // A tela de Usuários abre esta direto na aba de acesso: controle.html#acesso
+    if (window.location.hash === "#acesso") bootstrap.Tab.getOrCreateInstance(document.querySelector(`[data-bs-target="#abaAcesso"]`)).show();
     renderMatriz();
     await Promise.all([carregarCurva(), carregarUsuarios(), carregarConferencia()]);
 }
@@ -212,7 +214,7 @@ function renderTabela() {
     <tr>
       <td>${i.posicao}º</td>
       <td><span class="abc-badge abc-${i.classe.toLowerCase()}">${i.classe}</span></td>
-      <td><strong>${escapeHtml(p.nome)}</strong><br><small class="text-muted">${detalhes}</small></td>
+      <td><strong>${linkProduto(p)}</strong><br><small class="text-muted">${detalhes}</small></td>
       <td class="text-nowrap">${i.consumo > 0 ? `${i.consumo} <small class="text-muted">${escapeHtml(p.unidade || "")}</small>` : `<span class="text-muted">Sem saídas</span>`}</td>
       <td>${i.consumo > 0 ? pct(i.pctConsumo) : "-"}</td>
       <td>${i.consumo > 0 ? pct(i.pctAcumulado) : "-"}</td>
@@ -251,7 +253,7 @@ function renderConferencia() {
     document.getElementById("conferenciaBody").innerHTML = lista.map(p => `
     <tr class="${p.diferenca !== 0 ? "table-danger" : ""}">
       <td><small>${escapeHtml(p.codigo_barras || "-")}</small></td>
-      <td>${escapeHtml(p.nome)}</td>
+      <td><a class="link-produto" href="historico.html?q=${encodeURIComponent(p.nome)}" title="Ver o histórico deste produto">${escapeHtml(p.nome)}</a></td>
       <td>${p.estoque_inicial}</td>
       <td>${p.entradas}</td>
       <td>${p.saidas}</td>

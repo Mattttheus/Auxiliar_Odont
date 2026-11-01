@@ -3,7 +3,7 @@ import { requireAuth } from "./auth.js";
 import { renderShell } from "./layout.js";
 import { can } from "./permissions.js";
 import { listProdutos, listMovimentacoesDesde, getConfiguracoes } from "./data.js";
-import { formatDateBR, daysUntil, escapeHtml } from "./utils.js";
+import { formatDateBR, daysUntil, escapeHtml, linkProduto } from "./utils.js";
 import { calcularAlertas, statusEstoque, badgeEstoque, estoqueMinimo } from "./alertas.js";
 
 // Estas constantes precisam existir ANTES de carregarDashboard() ser chamada
@@ -21,6 +21,11 @@ if (user) {
     renderShell("dashboard.html", user);
     document.getElementById("welcomeBadge").textContent = `Bem-vindo, ${user.nome}`;
     if (!can(user, "compras")) document.getElementById("linkBaixo").href = "produtos.html?filter=baixo";
+    // Cada atalho aparece só para quem pode abrir a tela de destino.
+    if (!can(user, "historico")) document.getElementById("linkSaidas").removeAttribute("href");
+    document.getElementById("linkComprasReposicao").classList.toggle("d-none", !can(user, "compras"));
+    document.getElementById("linkCurvaAbc").classList.toggle("d-none", !can(user, "controle"));
+    document.getElementById("linkHistoricoMensal").classList.toggle("d-none", !can(user, "historico"));
     try {
         await carregarDashboard();
     } catch (err) {
@@ -77,7 +82,7 @@ function renderReposicao(produtos) {
     document.getElementById("reposicaoBody").innerHTML = itens.map(p => `
     <tr>
       <td><small class="text-muted">${escapeHtml(p.codigo_barras || "-")}</small></td>
-      <td>${escapeHtml(p.nome)}</td>
+      <td>${linkProduto(p)}</td>
       <td>${p.quantidade}</td>
       <td>${estoqueMinimo(p)}</td>
       <td>${badgeEstoque(p)}</td>
@@ -246,7 +251,7 @@ function renderVencimentos(produtos, cfg) {
         const dias = daysUntil(p.validade);
         const badge = dias < 0 ? `<span class="badge bg-danger">Vencido</span>`
             : dias <= cfg.dias_alerta_validade ? `<span class="badge bg-warning text-dark">${Math.ceil(dias)}d</span>` : "";
-        return `<tr><td>${escapeHtml(p.nome)}</td><td>${formatDateBR(p.validade)} ${badge}</td><td>${p.quantidade}</td></tr>`;
+        return `<tr><td>${linkProduto(p)}</td><td>${formatDateBR(p.validade)} ${badge}</td><td>${p.quantidade}</td></tr>`;
     }).join("") || `<tr><td colspan="3" class="text-muted text-center py-3">Nenhum produto com validade cadastrada.</td></tr>`;
 }
 
