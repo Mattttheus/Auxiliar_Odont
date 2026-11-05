@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Resumo do Auxiliar Odont</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Relatório de projeto: coluna de leitura de ~65 caracteres, galerias largas, números em mono. */
+:root {
+  --bg: #f5f7fa; --surface: #ffffff; --ink: #172033; --muted: #556072; --line: #dde3ec;
+  --accent: #1f5fae; --accent-soft: #e7eff9; --ok: #1d7a46; --ok-soft: #e3f3ea; --warn: #8a5a00; --warn-soft: #fbf0d9;
+  --danger: #b42318; --danger-soft: #fbe7e5; --real: #0f6b5c; --real-soft: #dff2ee; --demo: #6b4fa8; --demo-soft: #efe9f8;
+  --sans: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif; --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f1520; --surface: #161f2e; --ink: #e6ecf5; --muted: #9ba8bb; --line: #263247;
+  --accent: #7aaeee; --accent-soft: #1a2a42; --ok: #66c792; --ok-soft: #15301f; --warn: #e3b453; --warn-soft: #33270f;
+  --danger: #f08a7e; --danger-soft: #3a1b18; --real: #5fd0bd; --real-soft: #123129; --demo: #b9a2ec; --demo-soft: #2a2140; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0f1520; --surface: #161f2e; --ink: #e6ecf5; --muted: #9ba8bb; --line: #263247;
+  --accent: #7aaeee; --accent-soft: #1a2a42; --ok: #66c792; --ok-soft: #15301f; --warn: #e3b453; --warn-soft: #33270f;
+  --danger: #f08a7e; --danger-soft: #3a1b18; --real: #5fd0bd; --real-soft: #123129; --demo: #b9a2ec; --demo-soft: #2a2140; color-scheme: dark }
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+img { max-width: 100%; }
+body { background: var(--bg); color: var(--ink); font-family: var(--sans); font-size: 16px; line-height: 1.6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 40px 64px; }
+.pagina { max-width: 1080px; margin: 0 auto; display: grid; gap: 56px; }
+.texto { max-width: 68ch; }
+h1, h2, h3 { line-height: 1.2; text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(1.9rem, 4vw, 2.6rem); font-weight: 700; letter-spacing: -0.01em; }
+h2 { font-size: 1.55rem; font-weight: 600; }
+h3 { font-size: 1.1rem; font-weight: 600; }
+p { margin: 0; }
+a { color: var(--accent); }
+a:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+.olho { font-size: .78rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+.secao { display: grid; gap: 20px; min-width: 0; }
+.secao > header { display: grid; gap: 8px; }
+.lead { font-size: 1.12rem; color: var(--muted); max-width: 68ch; }
+.mono, .num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+.aviso { display: grid; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
+.aviso p { max-width: 80ch; }
+
+.chip { display: inline-flex; align-items: center; gap: 6px; font-size: .74rem; font-weight: 600; letter-spacing: .03em; padding: 2px 9px; border-radius: 999px; white-space: nowrap; }
+.chip::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.chip-real { color: var(--real); background: var(--real-soft); }
+.chip-demo { color: var(--demo); background: var(--demo-soft); }
+.chip-ok { color: var(--ok); background: var(--ok-soft); }
+.chip-est { color: var(--warn); background: var(--warn-soft); }
+.chip-sem { color: var(--danger); background: var(--danger-soft); }
+
+.numeros { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+.numero { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; gap: 2px; align-content: start; }
+.numero span { font-size: .82rem; color: var(--muted); }
+.numero strong { font-size: 1.55rem; font-weight: 600; }
+.numero small { color: var(--muted); font-size: .8rem; }
+.numero.destaque { border-color: var(--accent); background: var(--accent-soft); }
+
+.tabela { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: .74rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+tr:last-child td { border-bottom: 0; }
+td small { display: block; color: var(--muted); font-size: .78rem; }
+td.num { white-space: nowrap; }
+
+.passos { display: grid; gap: 12px; padding: 0; margin: 0; list-style: none; counter-reset: passo; }
+.passos li { counter-increment: passo; display: grid; grid-template-columns: 2rem 1fr; gap: 12px; align-items: start; max-width: 80ch; }
+.passos li::before { content: counter(passo); font-family: var(--mono); font-weight: 500; color: var(--accent); background: var(--accent-soft); border-radius: 8px; text-align: center; line-height: 2rem; }
+
+.galeria { display: grid; gap: 28px; }
+figure { margin: 0; display: grid; gap: 10px; min-width: 0; }
+.moldura { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: auto; max-height: 760px; }
+.moldura img { display: block; width: 100%; height: auto; }
+figcaption { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: baseline; font-size: .92rem; }
+figcaption b { font-weight: 600; }
+figcaption .rodape { color: var(--muted); flex-basis: 100%; }
+figcaption a { font-size: .85rem; margin-left: auto; }
+.duas { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr)); gap: 28px; }
+
+details { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+details > summary { cursor: pointer; padding: 14px 16px; font-weight: 600; }
+details[open] > summary { border-bottom: 1px solid var(--line); }
+details .tabela { border: 0; border-radius: 0 0 12px 12px; }
+
+.fluxo { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; overflow-x: auto; }
+.fontes { columns: 2 280px; column-gap: 28px; padding-left: 18px; margin: 0; font-size: .86rem; }
+.fontes li { break-inside: avoid; margin-bottom: 4px; }
+ul.lista { margin: 0; padding-left: 20px; display: grid; gap: 6px; max-width: 80ch; }
+footer { color: var(--muted); font-size: .85rem; border-top: 1px solid var(--line); padding-top: 18px; }
+@media (max-width: 600px) { body { padding-block: 24px 40px; } .pagina { gap: 40px; } .moldura { max-height: 520px; } }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+</head>
+<body>
+<main class="pagina">
+
+  <header class="secao">
+    <div class="olho">Resumo do projeto · 04/11/2026</div>
+    <h1>Auxiliar Odont: estoque, planejamento e compras do consultório</h1>
+    <p class="lead">Sistema que roda na rede local do consultório (WAMP, PHP e MySQL). Controla entradas, saídas, lotes e validades, aprende o consumo de cada material, projeta o estoque para 30, 60 e 90 dias e organiza o processo de compras com fornecedores, cotações e análise financeira.</p>
+    <div class="aviso">
+      <p><span class="chip chip-real">Estoque real</span> Prints e números desta marca vêm de uma cópia do banco do consultório feita em 04/11/2026: os 96 produtos, as quantidades e os custos pelo preço de mercado.</p>
+      <p><span class="chip chip-demo">Dados simulados</span> Para mostrar os processos futuros funcionando, outra cópia recebeu um histórico fictício de 26 semanas de consumo e compras, fornecedores com nomes de exemplo e cotações. Produtos e preços são os mesmos do banco real; os movimentos não são.</p>
+      <p>Prévia navegável com esses dados simulados, somente leitura: <a href="../dashboard.html">abrir o sistema em modo de demonstração</a>.</p>
+    </div>
+  </header>
+
+  <section class="secao" id="estoque">
+    <header>
+      <div class="olho">Comprovação do estoque</div>
+      <h2>Estoque em 04/11/2026</h2>
+      <p class="texto">Valores pelo custo de referência de mercado (seção Custos, abaixo). Dois itens sem referência de preço ficam fora do valor.</p>
+    </header>
+    <div class="numeros">
+      <div class="numero"><span>Produtos cadastrados</span><strong class="mono">96</strong><small>em 7 categorias</small></div>
+      <div class="numero"><span>Unidades em estoque</span><strong class="mono">22.992</strong><small>na unidade de cada cadastro</small></div>
+      <div class="numero destaque"><span>Valor do estoque</span><strong class="mono">R$ 26.538,55</strong><small>94 itens com custo de mercado</small></div>
+      <div class="numero"><span>Sem estoque</span><strong class="mono">15</strong><small>itens zerados</small></div>
+      <div class="numero"><span>Abaixo do mínimo</span><strong class="mono">27</strong><small>e 12 exatamente no mínimo</small></div>
+      <div class="numero"><span>Compra indicada em 30 dias</span><strong class="mono">R$ 4.311,68</strong><small>27 itens · 67 unidades</small></div>
+    </div>
+    <p class="texto">Há só 7 saídas registradas, todas em agosto. Com tão pouco histórico, a previsão de consumo é conservadora e a compra indicada repõe o estoque mínimo. A previsão melhora a cada saída registrada em Movimentar ou no Caixa.</p>
+    <div class="galeria">
+      <figure><div class="moldura"><img src="prints/02-real-dashboard.png" alt="Dashboard: Situação geral, alertas do menu e movimentações." loading="lazy"></div><figcaption><span class="chip chip-real">Estoque real</span><b>Dashboard</b><a href="prints/02-real-dashboard.png" target="_blank" rel="noopener">Abrir em tamanho real</a><span class="rodape">Situação geral, alertas do menu e movimentações.</span></figcaption></figure>
+      <figure><div class="moldura"><img src="prints/03-real-produtos.png" alt="Produtos: Cadastro completo com estoque, mínimo, status e validade." loading="lazy"></div><figcaption><span class="chip chip-real">Estoque real</span><b>Produtos</b><a href="prints/03-real-produtos.png" target="_blank" rel="noopener">Abrir em tamanho real</a><span class="rodape">Cadastro completo com estoque, mínimo, status e validade.</span></figcaption></figure>
+      <div class="duas">
+        <figure><div class="moldura"><img src="prints/04-real-curva-abc.png" alt="Curva ABC: Precedência dos produtos pelo consumo; com 7 saídas, a classificação ainda é preliminar." loading="lazy"></div><figcaption><span class="chip chip-real">Estoque real</span><b>Curva ABC</b><a href="prints/04-real-curva-abc.png" target="_blank" rel="noopener">Abrir em tamanho real</a><span class="rodape">Precedência dos produtos pelo consumo; com 7 saídas, a classificação ainda é preliminar.</span></figcaption></figure>
+        <figure><div class="moldura"><img src="prints/05-real-conferencia-saldo.png" alt="Conferência de saldo: Estoque inicial + entradas − saídas + ajustes = quantidade atual, como na planilha." loading="lazy"></div><figcaption><span class="chip chip-real">Estoque real</span><b>Conferência de saldo</b><a href="prints/05-real-conferencia-saldo.png" target="_blank" rel="noopener">Abrir em tamanho real</a><span class="rodape">Estoque inicial + entradas − saídas + ajustes = quantidade atual, como na planilha.</span></figcaption></figure>
+      </div>
+      <figure><div class="moldura"><img src="prints/06-real-planejamento-demonstrativo.png" alt="Planejamento: demonstrativo atual e futuro: Hoje, 30, 60 e 90 dias com o valor do estoque e as compras programadas." loading="lazy"></div><figcaption><span class="chip chip-real">Estoque real</span><b>Planejamento: demonstrativo atual e futuro</b><a href="prints/06-real-planejamento-demonstrativo.png" target="_blank" rel="noopener">Abrir em tamanho real</a><span class="rodape">Hoje, 30, 60 e 90 dias com o valor do estoque e as compras programadas.</span></figcaption></figure>
+      <div class="duas">
+        <figure><div class="moldura"><img src="prints/07-real-saude-estoque.png" alt="Saúde do estoque: Cada item na situação mais grave que se aplica." loading="lazy"></div><figcaption><span class="chip chip-real">Estoque real</span><b>Saúde do estoque</b><a href="prints/07-real-saude-estoque.png" target="_blank" rel="noopener">Abrir em tamanho real</a><span class="rodape">Cada item na situação mais grave que se aplica.</span></figcaption></figure>
+        <figure><div class="moldura"><img src="prints/08-real-compras-indicativas.png" alt="Compras indicativas: O que pedir em cada janela e até quando." loading="lazy"></div><figcaption><span class="chip chip-real">Estoque real</span><b>Compras indicativas</b><a href="prints/08-real-compras-indicativas.png" target="_blank" rel="noopener">Abrir em tamanho real</a><span class="rodape">O que pedir em cada janela e até quando.</span></figcaption></figure>
+      </div>
+      <div class="duas">
+        <figure><div class="moldura"><img src="prints/09-real-lista-compras.png" alt="Lista de Compras: Sugestão pelos critérios do consultório." loading="lazy"></div><figcaption><span class="chip chip-real">Estoque real</span><b>Lista de Compras</b><a href="prints/09-real-lista-compras.png" target="_blank" rel="noopener">Abrir em tamanho real</a><span class="rodape">Sugestão pelos critérios do consultório.</span></figcaption></figure>
+        <figure><div class="moldura"><img src="prints/10-real-historico.png" alt="Histórico: Registro de todas as ações, inclusive a atualização de custos." loading="lazy"></div><figcaption><span class="chip chip-real">Estoque real</span><b>Histórico</b><a href="prints/10-real-historico.png" target="_blank" rel="noopener">Abrir em tamanho real</a><span class="rodape">Registro de todas as ações, inclusive a atualização de custos.</span></figcaption></figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="secao" id="telas">
+    <header>
+      <div class="olho">Funcionalidades</div>
+      <h2>O que cada tela faz</h2>
+    </header>
+    <div class="tabela">
+      <table>
+        <thead><tr><th>Tela</th><th>O que faz</th><th>Quem usa</th></tr></thead>
+        <tbody>
+          <tr><td>Dashboard</td><td>Totais por situação, movimentações por dia e por mês, mais consumidos e alertas.</td><td>Todos</td></tr>
+          <tr><td>Produtos</td><td>Cadastro, filtros por status e validade, lotes e exportação CSV.</td><td>Todos consultam; administrador e estoquista editam</td></tr>
+          <tr><td>Movimentar (QR)</td><td>Entrada com lote, validade, fornecedor e custo; saída consumindo primeiro o lote que vence antes.</td><td>Administrador, estoquista e caixa</td></tr>
+          <tr><td>Caixa (PDV)</td><td>Venda com carrinho: todos os itens saem juntos, ou nenhum.</td><td>Administrador, estoquista e caixa</td></tr>
+          <tr><td>Planejamento 30/60/90</td><td>Previsão estatística, demonstrativo atual e futuro, saúde do estoque, compras indicativas e previsão por produto.</td><td>Administrador, estoquista e dentista (valores em reais só para o administrador)</td></tr>
+          <tr><td>Lista de Compras</td><td>Listas com fornecedor, pedido por e-mail e recebimento que dá entrada no estoque com o custo pago.</td><td>Administrador e estoquista; dentista consulta</td></tr>
+          <tr><td>Cotações</td><td>Solicitação por e-mail aos fornecedores, quadro de preços e conclusão em listas de compra.</td><td>Administrador</td></tr>
+          <tr><td>Fornecedores</td><td>Cadastro com CNPJ conferido e avaliação: prazo real, cotações respondidas e compras de 12 meses.</td><td>Administrador e estoquista</td></tr>
+          <tr><td>Financeiro</td><td>Análise por semana, mês, bimestre, trimestre e semestre; custos; envios automáticos.</td><td>Administrador</td></tr>
+          <tr><td>Etiquetas QR, Histórico, Controle e Curva ABC, Usuários</td><td>Etiquetas de prateleira, registro de ações, precedência ABC, conferência de saldo e níveis de acesso.</td><td>Conforme o nível de cada usuário</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="secao" id="planejamento">
+    <header>
+      <div class="olho">Planejamento preditivo</div>
+      <h2>Como o sistema prevê e programa as compras</h2>
+    </header>
+    <ol class="passos">
+      <li><p><b>Aprende o consumo.</b> As saídas viram uma série semanal por produto. Pouco histórico usa a média; consumo intermitente usa o método de Croston; os demais usam a suavização exponencial de Holt, que aprende nível e tendência e amortece a tendência para não extrapolar.</p></li>
+      <li><p><b>Define a proteção.</b> A curva ABC dá o nível de serviço (A 98%, B 95%, C 90%). O estoque de segurança é z × desvio do erro semanal × √prazo de entrega, e a proteção é o maior valor entre ele e o mínimo cadastrado.</p></li>
+      <li><p><b>Projeta dia a dia.</b> O consumo previsto sai primeiro do lote que vence antes; o que vence sem uso vira perda; listas abertas chegam no prazo de entrega.</p></li>
+      <li><p><b>Programa as compras.</b> Em cada janela de 30 dias, compra o necessário para terminar na proteção. O pedido sai um prazo de entrega antes de o estoque cair abaixo dela.</p></li>
+      <li><p><b>Calcula o gasto.</b> Quantidade × último custo de compra ou, sem compra com custo, o custo de referência de mercado.</p></li>
+    </ol>
+    <div class="galeria">
+      <div class="duas">
+        <figure><div class="moldura"><img src="prints/12-demo-curva-abc.png" alt="Curva ABC: precedência pelo consumo de 26 semanas, base do nível de serviço de cada item." loading="lazy"></div><figcaption><span class="chip chip-demo">Dados simulados</span><b>Curva ABC com histórico</b><a href="prints/12-demo-curva-abc.png" target="_blank" rel="noopener">Abrir em tamanho real</a><span class="rodape">Precedência pelo consumo de 26 semanas; a classe define o nível de serviço de cada item.</span></figcaption></figure>
+        <figure><div class="moldura"><img src="prints/11-demo-dashboard.png" alt="Dashboard com movimentações de 26 semanas." loading="lazy"></div><figcaption><span class="chip chip-demo">Dados simulados</span><b>Dashboard com movimentações</b><a href="prints/11-demo-dashboard.png" target="_blank" rel="noopener">Abrir em tamanho real</a><span class="rodape">Entradas e saídas por dia e por mês e os itens mais consumidos.</span></figcaption></figure>
+      </div>
+      <figure><div class="moldura"><img src="prints/13-demo-planejamento-demonstrativo.png" alt="Demonstrativo e curva de compras: Seis meses de compras realizadas e as três janelas previstas, em reais." loading="lazy"></div><figcaption><span class="chip chip-demo">Dados simulados</span><b>Demonstrativo e curva de compras</b><a href="prints/13-demo-planejamento-demonstrativo.png" target="_blank" rel="noopener">Abrir em tamanho real</a><span class="rodape">Seis meses de compras realizadas e as três janelas previstas, em reais.</span></figcaption></figure>
+      <div class="duas">
+        <figure><div class="moldura"><img src="prints/14-demo-saude-estoque.png" alt="Saúde do estoque: Sem estoque, abaixo da proteção, risco em 30 dias, excesso, parado e saudável." loading="lazy"></div><figcaption><span class="chip chip-demo">Dados simulados</span><b>Saúde do estoque</b><a href="prints/14-demo-saude-estoque.png" target="_blank" rel="noopener">Abrir em tamanho real</a><span class="rodape">Sem estoque, abaixo da proteção, risco em 30 dias, excesso, parado e saudável.</span></figcaption></figure>
+        <figure><div class="moldura"><img src="prints/15-demo-compras-indicativas.png" alt="Compras indicativas por janela: Pedir até, quantidade, valor e motivo; gera lista ou pede cotação." loading="lazy"></div><figcaption><span class="chip chip-demo">Dados simulados</span><b>Compras indicativas por janela</b><a href="prints/15-demo-compras-indicativas.png" target="_blank" rel="noopener">Abrir em tamanho real</a><span class="rodape">Pedir até, quantidade, valor e motivo; gera lista ou pede cotação.</span></figcaption></figure>
+      </div>
+      <figure><div class="moldura"><img src="prints/16-demo-previsao-por-produto.png" alt="Previsão por produto: Curva, método aprendido, tendência, proteção, ponto de pedido e compras em 30/60/90 dias." loading="lazy"></div><figcaption><span class="chip chip-demo">Dados simulados</span><b>Previsão por produto</b><a href="prints/16-demo-previsao-por-produto.png" target="_blank" rel="noopener">Abrir em tamanho real</a><span class="rodape">Curva, método aprendido, tendência, proteção, ponto de pedido e compras em 30/60/90 dias.</span></figcaption></figure>
+      <figure><div class="moldura"><img src="prints/17-demo-previsao-gaze.png" alt="Comportamento aprendido de um item: Consumo realizado, previsão de 13 semanas e faixa provável no nível de serviço da curva A." loading="lazy"></div><figcaption><span class="chip chip-demo">Dados simulados</span><b>Comportamento aprendido de um item</b><a href="prints/17-demo-previsao-gaze.png" target="_blank" rel="noopener">Abrir em tamanho real</a><span class="rodape">Consumo realizado, previsão de 13 semanas e faixa provável no nível de serviço da curva A.</span></figcaption></figure>
+    </div>
+  </section>
+
+  <section class="secao" id="financeiro">
+    <header>
+      <div class="olho">Análise financeira</div>
+      <h2>Períodos anteriores, atual e futuros</h2>
+      <p class="texto">O período atual soma o realizado até hoje e a previsão até o fim, com o progresso do período. No mensal, a previsão gravada no início de cada mês é comparada com o realizado: o erro mostra o quanto confiar no planejamento e cria o hábito de avaliação mensal.</p>
+    </header>
+    <div class="galeria">
+      <figure><div class="moldura"><img src="prints/18-demo-financeiro-mensal.png" alt="Análise mensal: Compras e consumo de seis meses anteriores, o mês atual e três meses previstos." loading="lazy"></div><figcaption><span class="chip chip-demo">Dados simulados</span><b>Análise mensal</b><a href="prints/18-demo-financeiro-mensal.png" target="_blank" rel="noopener">Abrir em tamanho real</a><span class="rodape">Compras e consumo de seis meses anteriores, o mês atual e três meses previstos.</span></figcaption></figure>
+      <div class="duas">
+        <figure><div class="moldura"><img src="prints/19-demo-financeiro-trimestral.png" alt="Análise trimestral: Quatro trimestres anteriores, o atual e dois previstos." loading="lazy"></div><figcaption><span class="chip chip-demo">Dados simulados</span><b>Análise trimestral</b><a href="prints/19-demo-financeiro-trimestral.png" target="_blank" rel="noopener">Abrir em tamanho real</a><span class="rodape">Quatro trimestres anteriores, o atual e dois previstos.</span></figcaption></figure>
+        <figure><div class="moldura"><img src="prints/20-demo-financeiro-semanal.png" alt="Análise semanal: Oito semanas anteriores, a atual e quatro previstas." loading="lazy"></div><figcaption><span class="chip chip-demo">Dados simulados</span><b>Análise semanal</b><a href="prints/20-demo-financeiro-semanal.png" target="_blank" rel="noopener">Abrir em tamanho real</a><span class="rodape">Oito semanas anteriores, a atual e quatro previstas.</span></figcaption></figure>
+      </div>
+      <figure><div class="moldura"><img src="prints/21-demo-financeiro-custos.png" alt="Custos de referência: Custo médio, último custo de compra e valor em estoque de cada produto." loading="lazy"></div><figcaption><span class="chip chip-demo">Dados simulados</span><b>Custos de referência</b><a href="prints/21-demo-financeiro-custos.png" target="_blank" rel="noopener">Abrir em tamanho real</a><span class="rodape">Custo médio, último custo de compra e valor em estoque de cada produto.</span></figcaption></figure>
+    </div>
+  </section>
+
+  <section class="secao" id="compras">
+    <header>
+      <div class="olho">Processo de compras</div>
+      <h2>Duas formas de comprar</h2>
+      <p class="texto">Na compra direta, a lista vai por e-mail a um fornecedor. Na compra por cotação, a solicitação vai a todos os fornecedores ativos com e-mail, e o menor preço vence. Nos dois casos, o recebimento dá entrada no estoque com o custo pago, e esse custo atualiza a média que alimenta o próximo planejamento.</p>
+    </header>
+    <div class="fluxo">
+<pre class="mermaid">
+flowchart LR
+  P["Planejamento 30/60/90<br/>compras indicativas"] --> D{"Forma de compra"}
+  D -->|direta| L["Lista de compra<br/>com fornecedor"]
+  D -->|cotação| C["Solicitação de cotação<br/>por e-mail"]
+  C --> Q["Quadro de preços<br/>menor preço vence"]
+  Q --> L
+  L --> E["Pedido enviado<br/>por e-mail"]
+  E --> R["Recebimento<br/>entrada com custo"]
+  R --> M["Custo médio<br/>atualizado"]
+  M --> P
+</pre>
+    </div>
+    <div class="galeria">
+      <div class="duas">
+        <figure><div class="moldura"><img src="prints/23-demo-fornecedores.png" alt="Fornecedores: Cadastro e avaliação; nomes e e-mails de exemplo." loading="lazy"></div><figcaption><span class="chip chip-demo">Dados simulados</span><b>Fornecedores</b><a href="prints/23-demo-fornecedores.png" target="_blank" rel="noopener">Abrir em tamanho real</a><span class="rodape">Cadastro e avaliação; nomes e e-mails de exemplo.</span></figcaption></figure>
+        <figure><div class="moldura"><img src="prints/24-demo-cotacoes.png" alt="Cotações: Solicitações enviadas, respostas e listas geradas." loading="lazy"></div><figcaption><span class="chip chip-demo">Dados simulados</span><b>Cotações</b><a href="prints/24-demo-cotacoes.png" target="_blank" rel="noopener">Abrir em tamanho real</a><span class="rodape">Solicitações enviadas, respostas e listas geradas.</span></figcaption></figure>
+      </div>
+      <figure><div class="moldura"><img src="prints/25-demo-quadro-cotacao.png" alt="Quadro de preços: O menor preço de cada item fica em verde; no empate, vence o menor prazo." loading="lazy"></div><figcaption><span class="chip chip-demo">Dados simulados</span><b>Quadro de preços</b><a href="prints/25-demo-quadro-cotacao.png" target="_blank" rel="noopener">Abrir em tamanho real</a><span class="rodape">O menor preço de cada item fica em verde; no empate, vence o menor prazo.</span></figcaption></figure>
+      <div class="duas">
+        <figure><div class="moldura"><img src="prints/26-demo-lista-compras.png" alt="Listas com fornecedor: Pedido por e-mail, recebimento com custo e origem da cotação." loading="lazy"></div><figcaption><span class="chip chip-demo">Dados simulados</span><b>Listas com fornecedor</b><a href="prints/26-demo-lista-compras.png" target="_blank" rel="noopener">Abrir em tamanho real</a><span class="rodape">Pedido por e-mail, recebimento com custo e origem da cotação.</span></figcaption></figure>
+        <figure><div class="moldura"><img src="prints/27-demo-entrada-com-fornecedor.png" alt="Entrada com fornecedor e custo: Na entrada manual, o administrador informa o custo pago." loading="lazy"></div><figcaption><span class="chip chip-demo">Dados simulados</span><b>Entrada com fornecedor e custo</b><a href="prints/27-demo-entrada-com-fornecedor.png" target="_blank" rel="noopener">Abrir em tamanho real</a><span class="rodape">Na entrada manual, o administrador informa o custo pago.</span></figcaption></figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="secao" id="envios">
+    <header>
+      <div class="olho">Envios automáticos</div>
+      <h2>Compras, avisos de estoque e análise por e-mail</h2>
+      <p class="texto">Cada envio tem tipo, frequência (diária, semanal, quinzenal, mensal, bimestral, trimestral ou semestral), horário e destinatários. Sai na primeira vez que alguém usa o sistema depois do horário, sem duplicar, e tenta de novo em uma hora se falhar. O envio de compras pode abrir sozinho uma solicitação de cotação aos fornecedores cadastrados.</p>
+    </header>
+    <div class="tabela">
+      <table>
+        <thead><tr><th>Tipo</th><th>Conteúdo</th><th>Horizonte</th></tr></thead>
+        <tbody>
+          <tr><td>Compras a fazer</td><td>Pedidos que precisam sair, com data, curva, motivo e, se escolhido, valores; opcionalmente pede cotação.</td><td>Até o próximo envio: 7 dias no semanal, 30 no mensal, 90 no trimestral, 180 no semestral</td></tr>
+          <tr><td>Aviso de estoque</td><td>Sem estoque, abaixo do mínimo, falta prevista, lotes vencidos e vencendo, índice de itens sem alerta.</td><td>No mínimo 7 dias</td></tr>
+          <tr><td>Análise financeira e preditiva</td><td>Período anterior, atual (realizado + previsto) e próximo, em quantidades e, se escolhido, em reais.</td><td>Semana, mês, bimestre, trimestre ou semestre</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="galeria">
+      <figure><div class="moldura"><img src="prints/22-demo-envios-automaticos.png" alt="Configuração dos envios: Servidor de e-mail, envios programados e registro de cada envio." loading="lazy"></div><figcaption><span class="chip chip-demo">Dados simulados</span><b>Configuração dos envios</b><a href="prints/22-demo-envios-automaticos.png" target="_blank" rel="noopener">Abrir em tamanho real</a><span class="rodape">Servidor de e-mail, envios programados e registro de cada envio.</span></figcaption></figure>
+      <div class="duas">
+        <figure><div class="moldura"><img src="prints/28-email-compras.png" alt="E-mail de compras: Prévia do envio mensal com pedido de cotação." loading="lazy"></div><figcaption><span class="chip chip-demo">Dados simulados</span><b>E-mail de compras</b><a href="prints/28-email-compras.png" target="_blank" rel="noopener">Abrir em tamanho real</a><span class="rodape">Prévia do envio mensal com pedido de cotação.</span></figcaption></figure>
+        <figure><div class="moldura"><img src="prints/29-email-estoque.png" alt="E-mail de aviso de estoque: Prévia com faltas, mínimos e validades." loading="lazy"></div><figcaption><span class="chip chip-demo">Dados simulados</span><b>E-mail de aviso de estoque</b><a href="prints/29-email-estoque.png" target="_blank" rel="noopener">Abrir em tamanho real</a><span class="rodape">Prévia com faltas, mínimos e validades.</span></figcaption></figure>
+      </div>
+      <figure><div class="moldura"><img src="prints/30-email-analise.png" alt="E-mail de análise: Prévia da comparação entre períodos." loading="lazy"></div><figcaption><span class="chip chip-demo">Dados simulados</span><b>E-mail de análise</b><a href="prints/30-email-analise.png" target="_blank" rel="noopener">Abrir em tamanho real</a><span class="rodape">Prévia da comparação entre períodos.</span></figcaption></figure>
+    </div>
+  </section>
+
+  <section class="secao" id="custos">
+    <header>
+      <div class="olho">Custos</div>
+      <h2>Custo de cada material pelo valor de mercado</h2>
+      <p class="texto">Pesquisa feita em 04/11/2026 em lojas odontológicas e hospitalares brasileiras (varejo on-line, sem frete). Para cada item vale a mediana dos anúncios, na embalagem cadastrada no sistema. É o ponto de partida: cada compra com custo recalcula a média ponderada, e o custo real do consultório substitui a referência com o uso.</p>
+    </header>
+    <div class="numeros">
+      <div class="numero"><span>Preço pesquisado</span><strong class="mono">59</strong><small>itens com anúncios encontrados</small></div>
+      <div class="numero"><span>Estimado</span><strong class="mono">35</strong><small>sem anúncio; por item equivalente</small></div>
+      <div class="numero"><span>Sem custo</span><strong class="mono">2</strong><small>Coroas Hable: sem referência</small></div>
+      <div class="numero"><span>Valor em estoque</span><strong class="mono">R$ 26.538,55</strong><small>R$ 5.343,00 vêm de itens estimados</small></div>
+    </div>
+    <details>
+      <summary>Tabela completa dos 96 produtos</summary>
+      <div class="tabela">
+        <table>
+          <thead><tr><th>Código</th><th>Produto e referência</th><th>Embalagem</th><th>Custo</th><th>Origem</th><th>Estoque</th><th>Valor</th></tr></thead>
+          <tbody>
+<tr><td class="num">01-001</td><td>Microbrush<small>Microbrush descartável: sem preço na busca</small></td><td>tubo com 100 aplicadores</td><td class="num">R$ 15,00</td><td><span class="chip chip-est">estimativa</span></td><td class="num">20</td><td class="num">R$ 300,00</td></tr>
+<tr><td class="num">01-002</td><td>Adesivo Universal<small>Adesivo Ambar 4 ml (FGM): Ice Virtual R$ 48,90, OK Dental R$ 47,99, Odonto Dental R$ 44,60</small></td><td>frasco 4 ml</td><td class="num">R$ 48,90</td><td><span class="chip chip-ok">pesquisa</span></td><td class="num">3</td><td class="num">R$ 146,70</td></tr>
+<tr><td class="num">01-003</td><td>Ácido Fosfórico 37%<small>Ácido fosfórico 37% gel: 2i R$ 6,27, Maquira R$ 5,23, Villevie R$ 8,65</small></td><td>seringa</td><td class="num">R$ 6,27</td><td><span class="chip chip-ok">pesquisa</span></td><td class="num">0</td><td class="num">R$ 0,00</td></tr>
+<tr><td class="num">01-004</td><td>Ionômero de Vidro<small>Ionômero Maxxion R (FGM) R$ 46,90</small></td><td>kit</td><td class="num">R$ 46,90</td><td><span class="chip chip-ok">pesquisa</span></td><td class="num">3</td><td class="num">R$ 140,70</td></tr>
+<tr><td class="num">01-005</td><td>Benzotop<small>Anestésico tópico Benzotop: sem preço na busca</small></td><td>frasco 12 g</td><td class="num">R$ 18,00</td><td><span class="chip chip-est">estimativa</span></td><td class="num">4</td><td class="num">R$ 72,00</td></tr>
+<tr><td class="num">01-006</td><td>Cimento reparador MTA (2 aplicações)<small>MTA Branco Angelus 2 doses: Dental Light R$ 229,90</small></td><td>embalagem com 2 doses</td><td class="num">R$ 229,90</td><td><span class="chip chip-ok">pesquisa</span></td><td class="num">2</td><td class="num">R$ 459,80</td></tr>
+<tr><td class="num">01-007</td><td>Cimento de hidróxido de cálcio (Dentística)<small>Hydro C (Dentsply): Dental Orto Line R$ 62,00</small></td><td>kit</td><td class="num">R$ 62,00</td><td><span class="chip chip-ok">pesquisa</span></td><td class="num">3</td><td class="num">R$ 186,00</td></tr>
+<tr><td class="num">01-008</td><td>Banda matriz aço 7 mm<small>Fita matriz aço 7 mm: Maquira R$ 4,24, Preven R$ 3,71, Iodontosul R$ 5,20</small></td><td>rolo 50 cm</td><td class="num">R$ 4,24</td><td><span class="chip chip-ok">pesquisa</span></td><td class="num">13</td><td class="num">R$ 55,12</td></tr>
+<tr><td class="num">01-009</td><td>Banda matriz aço 5 mm<small>Fita matriz aço 5 mm: Maquira R$ 4,24, Preven R$ 3,71, Iodontosul R$ 5,20</small></td><td>rolo 50 cm</td><td class="num">R$ 4,24</td><td><span class="chip chip-ok">pesquisa</span></td><td class="num">26</td><td class="num">R$ 110,24</td></tr>
+<tr><td class="num">01-010</td><td>Inter-A (material restaurador intermediário)<small>Referência equivalente: IRM (Dentsply) R$ 149,00 na Dental Orto Line</small></td><td>kit</td><td class="num">R$ 149,00</td><td><span class="chip chip-ok">pesquisa</span></td><td class="num">1</td><td class="num">R$ 149,00</td></tr>
+<tr><td class="num">01-011</td><td>Coroa Hable adulto<small>Sem referência de preço: fica sem custo</small></td><td>Pacote</td><td class="num">—</td><td><span class="chip chip-sem">sem custo</span></td><td class="num">1</td><td class="num">—</td></tr>
+<tr><td class="num">01-012</td><td>Coroa Hable pediátrica<small>Sem referência de preço: fica sem custo</small></td><td>Pacote</td><td class="num">—</td><td><span class="chip chip-sem">sem custo</span></td><td class="num">1</td><td class="num">—</td></tr>
+<tr><td class="num">01-013</td><td>Resina composta A1E<small>Resina Opallis 4 g (FGM): R$ 48,40 Pix; faixa R$ 41,50 a R$ 92,77</small></td><td>seringa 4 g</td><td class="num">R$ 48,40</td><td><span class="chip chip-ok">pesquisa</span></td><td class="num">2</td><td class="num">R$ 96,80</td></tr>
+<tr><td class="num">01-014</td><td>Resina composta A2E<small>Resina Opallis 4 g (FGM): R$ 48,40 Pix; faixa R$ 41,50 a R$ 92,77</small></td><td>seringa 4 g</td><td class="num">R$ 48,40</td><td><span class="chip chip-ok">pesquisa</span></td><td class="num">2</td><td class="num">R$ 96,80</td></tr>
+<tr><td class="num">01-015</td><td>Resina composta A3E<small>Resina Opallis 4 g (FGM): R$ 48,40 Pix; faixa R$ 41,50 a R$ 92,77</small></td><td>seringa 4 g</td><td class="num">R$ 48,40</td><td><span class="chip chip-ok">pesquisa</span></td><td class="num">1</td><td class="num">R$ 48,40</td></tr>
+<tr><td class="num">01-016</td><td>Resina composta A1B<small>Resina Opallis 4 g (FGM): R$ 48,40 Pix; faixa R$ 41,50 a R$ 92,77</small></td><td>seringa 4 g</td><td class="num">R$ 48,40</td><td><span class="chip chip-ok">pesquisa</span></td><td class="num">1</td><td class="num">R$ 48,40</td></tr>
+<tr><td class="num">01-017</td><td>Resina composta A2B<small>Resina Opallis 4 g (FGM): R$ 48,40 Pix; faixa R$ 41,50 a R$ 92,77</small></td><td>seringa 4 g</td><td class="num">R$ 48,40</td><td><span class="chip chip-ok">pesquisa</span></td><td class="num">0</td><td class="num">R$ 0,00</td></tr>
+<tr><td class="num">01-018</td><td>Resina composta A3B<small>Resina Opallis 4 g (FGM): R$ 48,40 Pix; faixa R$ 41,50 a R$ 92,77</small></td><td>seringa 4 g</td><td class="num">R$ 48,40</td><td><span class="chip chip-ok">pesquisa</span></td><td class="num">0</td><td class="num">R$ 0,00</td></tr>
+<tr><td class="num">01-019</td><td>Resina composta A3.5B<small>Resina Opallis 4 g (FGM): R$ 48,40 Pix; faixa R$ 41,50 a R$ 92,77</small></td><td>seringa 4 g</td><td class="num">R$ 48,40</td><td><span class="chip chip-ok">pesquisa</span></td><td class="num">0</td><td class="num">R$ 0,00</td></tr>
+<tr><td class="num">01-020</td><td>Forrador Dentinário Liner<small>Forrador ionomérico (liner): sem preço na busca</small></td><td>unidade</td><td class="num">R$ 45,00</td><td><span class="chip chip-est">estimativa</span></td><td class="num">0</td><td class="num">R$ 0,00</td></tr>
+<tr><td class="num">01-021</td><td>Discos de lixa P/M/G com mandril<small>Disco Diamond Pro (FGM): Dental Light R$ 104,90, Dental Sorria R$ 102,90, Odonto Dental R$ 104,49</small></td><td>refil 26 discos + mandril</td><td class="num">R$ 104,90</td><td><span class="chip chip-ok">pesquisa</span></td><td class="num">5</td><td class="num">R$ 524,50</td></tr>
+<tr><td class="num">01-022</td><td>Disco de lixa M com mandril<small>Disco Diamond Pro (FGM): Dental Light R$ 104,90</small></td><td>refil 26 discos + mandril</td><td class="num">R$ 104,90</td><td><span class="chip chip-ok">pesquisa</span></td><td class="num">1</td><td class="num">R$ 104,90</td></tr>
+<tr><td class="num">01-023</td><td>Bloco de papel p/ espatulação<small>Bloco de papel para espatulação: sem preço na busca</small></td><td>bloco</td><td class="num">R$ 6,00</td><td><span class="chip chip-est">estimativa</span></td><td class="num">3</td><td class="num">R$ 18,00</td></tr>
+<tr><td class="num">01-024</td><td>Arco Young plástico<small>Arco de Young plástico: sem preço na busca</small></td><td>unidade</td><td class="num">R$ 15,00</td><td><span class="chip chip-est">estimativa</span></td><td class="num">2</td><td class="num">R$ 30,00</td></tr>
+<tr><td class="num">01-025</td><td>Fio dental<small>Fio dental: sem preço na busca</small></td><td>rolo</td><td class="num">R$ 9,00</td><td><span class="chip chip-est">estimativa</span></td><td class="num">9</td><td class="num">R$ 81,00</td></tr>
+<tr><td class="num">01-026</td><td>Disco de lixa superfino s/ mandril<small>Disco Diamond Pro refil (FGM): Dental Sorria R$ 102,90</small></td><td>refil 26 discos</td><td class="num">R$ 102,90</td><td><span class="chip chip-ok">pesquisa</span></td><td class="num">7</td><td class="num">R$ 720,30</td></tr>
+<tr><td class="num">01-027</td><td>Disco de lixa grosso s/ mandril<small>Disco Diamond Pro refil (FGM): Dental Sorria R$ 102,90</small></td><td>refil 26 discos</td><td class="num">R$ 102,90</td><td><span class="chip chip-ok">pesquisa</span></td><td class="num">4</td><td class="num">R$ 411,60</td></tr>
+<tr><td class="num">01-028</td><td>Tira de poliéster p/ acabamento<small>Tira de poliéster para acabamento: sem preço na busca</small></td><td>pacote</td><td class="num">R$ 8,00</td><td><span class="chip chip-est">estimativa</span></td><td class="num">14</td><td class="num">R$ 112,00</td></tr>
+<tr><td class="num">01-029</td><td>Tira de poliéster transparente<small>Tira de poliéster transparente: sem preço na busca</small></td><td>pacote</td><td class="num">R$ 6,00</td><td><span class="chip chip-est">estimativa</span></td><td class="num">15</td><td class="num">R$ 90,00</td></tr>
+<tr><td class="num">01-030</td><td>Cunha de madeira<small>Cunha de madeira: sem preço avulso na busca</small></td><td>pacote</td><td class="num">R$ 12,00</td><td><span class="chip chip-est">estimativa</span></td><td class="num">7</td><td class="num">R$ 84,00</td></tr>
+<tr><td class="num">01-031</td><td>Papel carbono<small>Papel carbono articular: sem preço na busca</small></td><td>pacote</td><td class="num">R$ 12,00</td><td><span class="chip chip-est">estimativa</span></td><td class="num">70</td><td class="num">R$ 840,00</td></tr>
+<tr><td class="num">01-032</td><td>Fio retrator<small>Fio retrator: sem preço na busca</small></td><td>unidade</td><td class="num">R$ 35,00</td><td><span class="chip chip-est">estimativa</span></td><td class="num">2</td><td class="num">R$ 70,00</td></tr>
+<tr><td class="num">02-001</td><td>Esponja Hemostática<small>Hemospon (Maquira): Unidental R$ 76,90</small></td><td>pacote</td><td class="num">R$ 76,90</td><td><span class="chip chip-ok">pesquisa</span></td><td class="num">1</td><td class="num">R$ 76,90</td></tr>
+<tr><td class="num">02-002</td><td>Líquido Hemostático<small>Líquido hemostático: sem preço na busca</small></td><td>frasco</td><td class="num">R$ 30,00</td><td><span class="chip chip-est">estimativa</span></td><td class="num">1</td><td class="num">R$ 30,00</td></tr>
+<tr><td class="num">02-003</td><td>Lâmina de bisturi<small>Lâmina de bisturi aço carbono: Unidental R$ 42,00</small></td><td>caixa</td><td class="num">R$ 42,00</td><td><span class="chip chip-ok">pesquisa</span></td><td class="num">2</td><td class="num">R$ 84,00</td></tr>
+<tr><td class="num">02-004</td><td>Agulha 22 G (preta)<small>Agulha hipodérmica 22 G: sem preço na busca</small></td><td>caixa com 100</td><td class="num">R$ 18,00</td><td><span class="chip chip-est">estimativa</span></td><td class="num">6</td><td class="num">R$ 108,00</td></tr>
+<tr><td class="num">02-005</td><td>Fio de sutura<small>Fio de sutura seda 4-0: sem preço na busca</small></td><td>caixa com 24</td><td class="num">R$ 90,00</td><td><span class="chip chip-est">estimativa</span></td><td class="num">4</td><td class="num">R$ 360,00</td></tr>
+<tr><td class="num">03-001</td><td>Bicarbonato de sódio<small>Bicarbonato para profilaxia: sem preço na busca</small></td><td>caixa</td><td class="num">R$ 30,00</td><td><span class="chip chip-est">estimativa</span></td><td class="num">9</td><td class="num">R$ 270,00</td></tr>
+<tr><td class="num">04-001</td><td>NDP<small>Pasta NDP: sem preço na busca</small></td><td>caixa</td><td class="num">R$ 40,00</td><td><span class="chip chip-est">estimativa</span></td><td class="num">1</td><td class="num">R$ 40,00</td></tr>
+<tr><td class="num">04-002</td><td>PRP<small>Pasta PRP: sem preço na busca</small></td><td>caixa</td><td class="num">R$ 40,00</td><td><span class="chip chip-est">estimativa</span></td><td class="num">0</td><td class="num">R$ 0,00</td></tr>
+<tr><td class="num">04-003</td><td>Eucaliptol<small>Eucaliptol (Biodinâmica): R$ 15,00 preço cheio, R$ 7,99 em promoção</small></td><td>frasco 10 ml</td><td class="num">R$ 15,00</td><td><span class="chip chip-ok">pesquisa</span></td><td class="num">1</td><td class="num">R$ 15,00</td></tr>
+<tr><td class="num">04-004</td><td>Lençol de borracha<small>Lençol de borracha Madeitex: Odontomaster R$ 36,90; faixa R$ 32,00 a R$ 49,90</small></td><td>caixa com 26 folhas</td><td class="num">R$ 36,90</td><td><span class="chip chip-ok">pesquisa</span></td><td class="num">9</td><td class="num">R$ 332,10</td></tr>
+<tr><td class="num">04-005</td><td>Formocresol<small>Formocresol (Biodinâmica): Artvend R$ 22,30; faixa R$ 18,90 a R$ 35,23</small></td><td>frasco 10 ml</td><td class="num">R$ 22,30</td><td><span class="chip chip-ok">pesquisa</span></td><td class="num">0</td><td class="num">R$ 0,00</td></tr>
+<tr><td class="num">04-006</td><td>Cone de papel absorvente 45-80<small>Cone de papel absorvente: Dentsply R$ 46,59, Bassi R$ 47,41, Tanari R$ 43,66</small></td><td>caixa com 120</td><td class="num">R$ 46,59</td><td><span class="chip chip-ok">pesquisa</span></td><td class="num">22</td><td class="num">R$ 1.024,98</td></tr>
+<tr><td class="num">04-007</td><td>Cone de papel absorvente 15<small>Cone de papel absorvente: Dentsply R$ 46,59, Bassi R$ 47,41, Tanari R$ 43,66</small></td><td>caixa com 120</td><td class="num">R$ 46,59</td><td><span class="chip chip-ok">pesquisa</span></td><td class="num">4</td><td class="num">R$ 186,36</td></tr>
+<tr><td class="num">04-008</td><td>Cone de papel absorvente 20<small>Cone de papel absorvente: Dentsply R$ 46,59, Bassi R$ 47,41, Tanari R$ 43,66</small></td><td>caixa com 120</td><td class="num">R$ 46,59</td><td><span class="chip chip-ok">pesquisa</span></td><td class="num">5</td><td class="num">R$ 232,95</td></tr>
+<tr><td class="num">04-009</td><td>Cone de papel absorvente 25<small>Cone de papel absorvente: Dentsply R$ 46,59, Bassi R$ 47,41, Tanari R$ 43,66</small></td><td>caixa com 120</td><td class="num">R$ 46,59</td><td><span class="chip chip-ok">pesquisa</span></td><td class="num">3</td><td class="num">R$ 139,77</td></tr>
+<tr><td class="num">04-010</td><td>Cone de papel absorvente 30<small>Cone de papel absorvente: Dentsply R$ 46,59, Bassi R$ 47,41, Tanari R$ 43,66</small></td><td>caixa com 120</td><td class="num">R$ 46,59</td><td><span class="chip chip-ok">pesquisa</span></td><td class="num">3</td><td class="num">R$ 139,77</td></tr>
+<tr><td class="num">04-011</td><td>Cone de papel absorvente 35<small>Cone de papel absorvente: Dentsply R$ 46,59, Bassi R$ 47,41, Tanari R$ 43,66</small></td><td>caixa com 120</td><td class="num">R$ 46,59</td><td><span class="chip chip-ok">pesquisa</span></td><td class="num">1</td><td class="num">R$ 46,59</td></tr>
+<tr><td class="num">04-012</td><td>Cone de papel absorvente 60<small>Cone de papel absorvente: Dentsply R$ 46,59, Bassi R$ 47,41, Tanari R$ 43,66</small></td><td>caixa com 120</td><td class="num">R$ 46,59</td><td><span class="chip chip-ok">pesquisa</span></td><td class="num">3</td><td class="num">R$ 139,77</td></tr>
+<tr><td class="num">04-013</td><td>Cone de papel absorvente 80<small>Cone de papel absorvente: Dentsply R$ 46,59, Bassi R$ 47,41, Tanari R$ 43,66</small></td><td>caixa com 120</td><td class="num">R$ 46,59</td><td><span class="chip chip-ok">pesquisa</span></td><td class="num">4</td><td class="num">R$ 186,36</td></tr>
+<tr><td class="num">05-001</td><td>Agulha curta<small>Agulha gengival curta 30G: Drogaraia R$ 50,89, AF Hospitalar R$ 51,95, D Care R$ 49,90</small></td><td>caixa com 100</td><td class="num">R$ 50,89</td><td><span class="chip chip-ok">pesquisa</span></td><td class="num">5</td><td class="num">R$ 254,45</td></tr>
+<tr><td class="num">05-002</td><td>Filmes radiográficos<small>Filme periapical E-Speed (Carestream): Dental Odonthomaz R$ 279,90; faixa R$ 269,90 a R$ 297,90</small></td><td>caixa com 150</td><td class="num">R$ 279,90</td><td><span class="chip chip-ok">pesquisa</span></td><td class="num">7</td><td class="num">R$ 1.959,30</td></tr>
+<tr><td class="num">05-003</td><td>Sugador cirúrgico<small>Cânula de sucção cirúrgica descartável: sem preço na busca</small></td><td>unidade</td><td class="num">R$ 3,00</td><td><span class="chip chip-est">estimativa</span></td><td class="num">8</td><td class="num">R$ 24,00</td></tr>
+<tr><td class="num">05-004</td><td>Caixa descarpack pequena 3 L<small>Caixa coletora de perfurocortantes 3 L: sem preço na busca</small></td><td>unidade</td><td class="num">R$ 6,00</td><td><span class="chip chip-est">estimativa</span></td><td class="num">8</td><td class="num">R$ 48,00</td></tr>
+<tr><td class="num">05-005</td><td>Touca descartável<small>Touca sanfonada Ferraz Premium: R$ 15,95</small></td><td>pacote com 100</td><td class="num">R$ 15,95</td><td><span class="chip chip-ok">pesquisa</span></td><td class="num">9</td><td class="num">R$ 143,55</td></tr>
+<tr><td class="num">05-006</td><td>Máscara N95<small>Máscara PFF2/N95: R$ 1,89 (Valery); caixa 50 por R$ 86,50 (Amazon)</small></td><td>unidade</td><td class="num">R$ 1,89</td><td><span class="chip chip-ok">pesquisa</span></td><td class="num">220</td><td class="num">R$ 415,80</td></tr>
+<tr><td class="num">05-007</td><td>Máscara descartável<small>Máscara descartável tripla: sem preço na busca</small></td><td>caixa com 50</td><td class="num">R$ 15,00</td><td><span class="chip chip-est">estimativa</span></td><td class="num">9</td><td class="num">R$ 135,00</td></tr>
+<tr><td class="num">05-008</td><td>Avental cirúrgico<small>Avental SMS 40 g: pacote com 10 por R$ 94,90 (SP Protection)</small></td><td>unidade</td><td class="num">R$ 9,49</td><td><span class="chip chip-ok">pesquisa</span></td><td class="num">42</td><td class="num">R$ 398,58</td></tr>
+<tr><td class="num">05-009</td><td>Avental de TNT<small>Avental TNT 40 g manga longa: pacote com 10 por R$ 37,29 (Utilidades Clínicas)</small></td><td>unidade</td><td class="num">R$ 3,73</td><td><span class="chip chip-ok">pesquisa</span></td><td class="num">928</td><td class="num">R$ 3.461,44</td></tr>
+<tr><td class="num">05-010</td><td>Avental de plástico<small>Avental plástico descartável: sem preço na busca</small></td><td>unidade</td><td class="num">R$ 0,80</td><td><span class="chip chip-est">estimativa</span></td><td class="num">390</td><td class="num">R$ 312,00</td></tr>
+<tr><td class="num">05-011</td><td>Rolete de algodão<small>Rolete de algodão WA: Dental Light R$ 3,90; faixa R$ 2,90 a R$ 7,94</small></td><td>pacote com 100</td><td class="num">R$ 3,90</td><td><span class="chip chip-ok">pesquisa</span></td><td class="num">300</td><td class="num">R$ 1.170,00</td></tr>
+<tr><td class="num">05-012</td><td>Sugador<small>Sugador descartável: WA R$ 9,50, Dochem R$ 8,90, SSPlus R$ 10,19</small></td><td>pacote com 40</td><td class="num">R$ 9,50</td><td><span class="chip chip-ok">pesquisa</span></td><td class="num">150</td><td class="num">R$ 1.425,00</td></tr>
+<tr><td class="num">05-013</td><td>Seringa 10 mL<small>Seringa descartável 10 ml: sem preço na busca</small></td><td>unidade</td><td class="num">R$ 0,70</td><td><span class="chip chip-est">estimativa</span></td><td class="num">250</td><td class="num">R$ 175,00</td></tr>
+<tr><td class="num">05-014</td><td>Saco Geladinho<small>Saco tipo geladinho 6x24: pacote com 1000 entre R$ 35,50 e R$ 52,00</small></td><td>unidade</td><td class="num">R$ 0,04</td><td><span class="chip chip-ok">pesquisa</span></td><td class="num">20000</td><td class="num">R$ 800,00</td></tr>
+<tr><td class="num">05-015</td><td>Papel grau cirúrgico 150 mm<small>Papel grau cirúrgico: Dental Curitibana R$ 94,90, Hospicenter R$ 96,50</small></td><td>rolo 15 cm x 100 m</td><td class="num">R$ 94,90</td><td><span class="chip chip-ok">pesquisa</span></td><td class="num">0</td><td class="num">R$ 0,00</td></tr>
+<tr><td class="num">05-016</td><td>Papel grau cirúrgico 200 mm<small>Proporcional ao rolo de 15 cm (R$ 94,90)</small></td><td>rolo 20 cm x 100 m</td><td class="num">R$ 125,00</td><td><span class="chip chip-est">estimativa</span></td><td class="num">1</td><td class="num">R$ 125,00</td></tr>
+<tr><td class="num">05-017</td><td>Álcool 70%<small>Álcool 70% líquido: sem preço na busca</small></td><td>litro</td><td class="num">R$ 12,00</td><td><span class="chip chip-est">estimativa</span></td><td class="num">26</td><td class="num">R$ 312,00</td></tr>
+<tr><td class="num">05-018</td><td>Revelador<small>Revelador SS White: A Dental R$ 21,06</small></td><td>frasco 475 ml</td><td class="num">R$ 21,06</td><td><span class="chip chip-ok">pesquisa</span></td><td class="num">6</td><td class="num">R$ 126,36</td></tr>
+<tr><td class="num">05-019</td><td>Fixador<small>Fixador Lysanda: Starhouse R$ 18,90; Preven R$ 19,79</small></td><td>frasco 475 ml</td><td class="num">R$ 18,90</td><td><span class="chip chip-ok">pesquisa</span></td><td class="num">14</td><td class="num">R$ 264,60</td></tr>
+<tr><td class="num">05-020</td><td>Álcool em gel<small>Álcool gel 70% 1 L (Cinord): MedShop R$ 18,90</small></td><td>litro</td><td class="num">R$ 18,90</td><td><span class="chip chip-ok">pesquisa</span></td><td class="num">13</td><td class="num">R$ 245,70</td></tr>
+<tr><td class="num">05-021</td><td>Detergente enzimático<small>Detergente enzimático: sem preço na busca</small></td><td>litro</td><td class="num">R$ 45,00</td><td><span class="chip chip-est">estimativa</span></td><td class="num">3</td><td class="num">R$ 135,00</td></tr>
+<tr><td class="num">05-022</td><td>Hipoclorito de sódio 2,5%<small>Hipoclorito de sódio 2,5%: sem preço na busca</small></td><td>litro</td><td class="num">R$ 10,00</td><td><span class="chip chip-est">estimativa</span></td><td class="num">3</td><td class="num">R$ 30,00</td></tr>
+<tr><td class="num">05-023</td><td>Guardanapo<small>Guardanapo de papel: sem preço na busca</small></td><td>pacote</td><td class="num">R$ 5,00</td><td><span class="chip chip-est">estimativa</span></td><td class="num">52</td><td class="num">R$ 260,00</td></tr>
+<tr><td class="num">05-024</td><td>Água destilada<small>Água destilada: sem preço na busca</small></td><td>galão 5 L</td><td class="num">R$ 18,00</td><td><span class="chip chip-est">estimativa</span></td><td class="num">26</td><td class="num">R$ 468,00</td></tr>
+<tr><td class="num">05-025</td><td>Babador<small>Babador descartável: Best Care R$ 22,80, Hospiflex R$ 21,92, Biodinâmica R$ 34,08</small></td><td>pacote com 100</td><td class="num">R$ 22,80</td><td><span class="chip chip-ok">pesquisa</span></td><td class="num">60</td><td class="num">R$ 1.368,00</td></tr>
+<tr><td class="num">05-026</td><td>Gaze<small>Gaze 7,5x7,5 13 fios: Welmed R$ 33,60, Drogasil R$ 36,99</small></td><td>pacote com 500</td><td class="num">R$ 33,60</td><td><span class="chip chip-ok">pesquisa</span></td><td class="num">71</td><td class="num">R$ 2.385,60</td></tr>
+<tr><td class="num">05-027</td><td>Flúor 2%<small>Flúor neutro 2%: Maquira R$ 10,90, Iodontosul R$ 10,45, SS White R$ 13,00</small></td><td>frasco 200 ml</td><td class="num">R$ 10,90</td><td><span class="chip chip-ok">pesquisa</span></td><td class="num">7</td><td class="num">R$ 76,30</td></tr>
+<tr><td class="num">05-028</td><td>Flúor 1,23%<small>Flúor acidulado 1,23%: Maquira R$ 10,55, DFL R$ 8,40, Skymed R$ 8,90</small></td><td>frasco 200 ml</td><td class="num">R$ 10,55</td><td><span class="chip chip-ok">pesquisa</span></td><td class="num">8</td><td class="num">R$ 84,40</td></tr>
+<tr><td class="num">05-029</td><td>Clorexidina 2% (lavar mãos)<small>Clorexidina 2% degermante Riohex: Amazon R$ 32,90, Orto Curitiba R$ 33,16, Medplus R$ 26,00</small></td><td>litro</td><td class="num">R$ 32,90</td><td><span class="chip chip-ok">pesquisa</span></td><td class="num">1</td><td class="num">R$ 32,90</td></tr>
+<tr><td class="num">05-030</td><td>Anestésico Prilocaína<small>Prilonest 3% (Nova DFL): Odontomaster R$ 267,83</small></td><td>caixa com 50 tubetes</td><td class="num">R$ 267,83</td><td><span class="chip chip-ok">pesquisa</span></td><td class="num">0</td><td class="num">R$ 0,00</td></tr>
+<tr><td class="num">05-031</td><td>Anestésico Lidocaína<small>Lidostesim 2% 1:50.000 (DLA): Odontomaster R$ 161,20</small></td><td>caixa com 50 tubetes</td><td class="num">R$ 161,20</td><td><span class="chip chip-ok">pesquisa</span></td><td class="num">0</td><td class="num">R$ 0,00</td></tr>
+<tr><td class="num">05-032</td><td>Anestésico Mepivacaína<small>Mepivacaína 2%: Mepivalem AD R$ 206,06 e Mepiadre R$ 254,89 (média)</small></td><td>caixa com 50 tubetes</td><td class="num">R$ 230,48</td><td><span class="chip chip-ok">pesquisa</span></td><td class="num">0</td><td class="num">R$ 0,00</td></tr>
+<tr><td class="num">05-033</td><td>Anestésico Articaína<small>Articaína 4%: Nova DFL R$ 226,01 e R$ 242,63, Septanest R$ 279,97</small></td><td>caixa com 50 tubetes</td><td class="num">R$ 242,63</td><td><span class="chip chip-ok">pesquisa</span></td><td class="num">0</td><td class="num">R$ 0,00</td></tr>
+<tr><td class="num">05-034</td><td>Fita adesiva autoclavavél<small>Fita indicadora para autoclave: sem preço na busca</small></td><td>rolo</td><td class="num">R$ 12,00</td><td><span class="chip chip-est">estimativa</span></td><td class="num">0</td><td class="num">R$ 0,00</td></tr>
+<tr><td class="num">05-035</td><td>Agulha longa<small>Agulha gengival longa 30G Injex: Medicallage R$ 48,00; D Care R$ 54,90</small></td><td>caixa com 100</td><td class="num">R$ 48,00</td><td><span class="chip chip-ok">pesquisa</span></td><td class="num">0</td><td class="num">R$ 0,00</td></tr>
+<tr><td class="num">06-001</td><td>Cimento resinoso (prótese) Dual<small>Allcem Dual (FGM): R$ 113,00 a R$ 186,00; mediana R$ 143,22</small></td><td>kit</td><td class="num">R$ 143,22</td><td><span class="chip chip-ok">pesquisa</span></td><td class="num">1</td><td class="num">R$ 143,22</td></tr>
+<tr><td class="num">06-002</td><td>Pote Dappen plástico/silicone<small>Pote Dappen: sem preço na busca</small></td><td>unidade</td><td class="num">R$ 5,00</td><td><span class="chip chip-est">estimativa</span></td><td class="num">4</td><td class="num">R$ 20,00</td></tr>
+<tr><td class="num">06-003</td><td>Eugenol<small>Eugenol: sem preço na busca</small></td><td>frasco 20 ml</td><td class="num">R$ 15,00</td><td><span class="chip chip-est">estimativa</span></td><td class="num">0</td><td class="num">R$ 0,00</td></tr>
+<tr><td class="num">07-001</td><td>Jacarés<small>Prendedor jacaré: sem preço na busca</small></td><td>unidade</td><td class="num">R$ 12,00</td><td><span class="chip chip-est">estimativa</span></td><td class="num">2</td><td class="num">R$ 24,00</td></tr>
+<tr><td class="num">07-002</td><td>Sonda exploradora nº 5<small>Sonda exploradora nº 5: Kota R$ 20,00; faixa R$ 11,39 a R$ 62,62</small></td><td>unidade</td><td class="num">R$ 20,00</td><td><span class="chip chip-ok">pesquisa</span></td><td class="num">9</td><td class="num">R$ 180,00</td></tr>
+<tr><td class="num">07-003</td><td>Espátula p/ resina Ward<small>Espátula para resina: sem preço na busca</small></td><td>unidade</td><td class="num">R$ 45,00</td><td><span class="chip chip-est">estimativa</span></td><td class="num">5</td><td class="num">R$ 225,00</td></tr>
+<tr><td class="num">07-004</td><td>Sonda Carolina do Norte<small>Sonda Carolina do Norte Millennium (Golgran): Dentalecia R$ 62,53; faixa R$ 48,90 a R$ 74,80</small></td><td>unidade</td><td class="num">R$ 62,53</td><td><span class="chip chip-ok">pesquisa</span></td><td class="num">5</td><td class="num">R$ 312,65</td></tr>
+<tr><td class="num">07-005</td><td>Tesoura Goldmann Fox<small>Tesoura Goldman-Fox: sem preço na busca</small></td><td>unidade</td><td class="num">R$ 65,00</td><td><span class="chip chip-est">estimativa</span></td><td class="num">5</td><td class="num">R$ 325,00</td></tr>
+<tr><td class="num">07-006</td><td>Cabo p/ espelho<small>Cabo para espelho: sem preço na busca</small></td><td>unidade</td><td class="num">R$ 10,00</td><td><span class="chip chip-est">estimativa</span></td><td class="num">22</td><td class="num">R$ 220,00</td></tr>
+<tr><td class="num">07-007</td><td>Espelho nº 5<small>Espelho bucal nº 5: pacote com 20 por R$ 41,75 (Prisma)</small></td><td>unidade</td><td class="num">R$ 2,09</td><td><span class="chip chip-ok">pesquisa</span></td><td class="num">21</td><td class="num">R$ 43,89</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+    <p class="texto">O valor depende da unidade cadastrada. Exemplo: o Rolete de algodão está com 300 "pacotes" de 100 unidades; se a planilha contou roletes soltos, o valor real é menor. Vale conferir as unidades dos itens de maior valor.</p>
+    <h3>Lojas consultadas</h3>
+    <ul class="fontes">
+      <li><a href="https://www.odontomaster.com.br/anestesico/anestesico-com-vaso" target="_blank" rel="noopener">Odontomaster: anestésicos com vaso</a></li>
+      <li><a href="https://www.dentalcremer.com.br/resina-opallis-fgm-dc10928.html" target="_blank" rel="noopener">Dental Cremer: resina Opallis 4 g</a></li>
+      <li><a href="https://www.dentalecia.com.br/resinaopallisfgm/p" target="_blank" rel="noopener">Dentalecia: resina Opallis 4 g</a></li>
+      <li><a href="https://emporiodental.com.br/resina-opallis-4g-fgm" target="_blank" rel="noopener">Empório Dental: resina Opallis 4 g</a></li>
+      <li><a href="https://www.dentalodonthomaz.com.br/produtos/acido-fosforico-37-2i/" target="_blank" rel="noopener">Dental Odonthomaz: ácido fosfórico 37% 2i</a></li>
+      <li><a href="https://www.dentalproclin.com.br/produto/condicionador-acido-fosforico-gel-37-maquira-72470" target="_blank" rel="noopener">Dental Proclin: condicionador ácido Maquira</a></li>
+      <li><a href="https://www.icevirtual.com.br/adesivo-ambar-4ml-fgm" target="_blank" rel="noopener">Ice Virtual: adesivo Ambar 4 ml</a></li>
+      <li><a href="https://www.dentalortoline.com.br/dentsply" target="_blank" rel="noopener">Dental Orto Line: IRM e Hydro C (Dentsply)</a></li>
+      <li><a href="https://www.dentallight.com.br/produto/cimento-reparador-bioceramico-mta-angelus-75385" target="_blank" rel="noopener">Dental Light: MTA Angelus</a></li>
+      <li><a href="https://www.dentalweb.com.br/banda-matriz-de-aco-inox-iodontosul" target="_blank" rel="noopener">Dental Web: banda matriz Iodontosul</a></li>
+      <li><a href="https://www.dentallight.com.br/produto/disco-de-lixa-diamond-pro-fgm-74094" target="_blank" rel="noopener">Dental Light: disco Diamond Pro</a></li>
+      <li><a href="https://www.lojainterdental.com.br/cone-de-papel-absorv-bulk-tanari/p" target="_blank" rel="noopener">Loja Interdental: cone de papel Tanari</a></li>
+      <li><a href="https://www.dentalecia.com.br/conedepapelabsorvente28mmmaillefer-dentsplysirona/p" target="_blank" rel="noopener">Dentalecia: cone de papel Dentsply</a></li>
+      <li><a href="https://www.odontomaster.com.br/produto/lencol-de-borracha-madeitex-70627" target="_blank" rel="noopener">Odontomaster: lençol de borracha Madeitex</a></li>
+      <li><a href="https://artvenddental.com.br/formocresol-10ml-biodinamica-003100/p" target="_blank" rel="noopener">Artvend: formocresol Biodinâmica</a></li>
+      <li><a href="https://www.lojaunidental.com.br/cirurgia/" target="_blank" rel="noopener">Unidental: bisturi e Hemospon</a></li>
+      <li><a href="https://www.drogaraia.com.br/agulha-gengival-curta-uniqmed-30g-caixa-100-unidades-odonto-1219290.html" target="_blank" rel="noopener">Drogaraia: agulha gengival curta</a></li>
+      <li><a href="https://medicallage.com.br/produtos/agulha-gengival-030x30-30g-longa-injex-c-100-un/" target="_blank" rel="noopener">Medicallage: agulha gengival longa</a></li>
+      <li><a href="https://adental.com.br/loja/filme-radiografico-adulto-periapical-e-speed-carestream/" target="_blank" rel="noopener">A Dental: filme periapical Carestream</a></li>
+      <li><a href="https://www.starhouse.com.br/beleza-e-saude/dental/fixador-dental-filme-radiografico-475ml-lysanda" target="_blank" rel="noopener">Starhouse: fixador Lysanda</a></li>
+      <li><a href="https://www.welmed.com.br/produto/compressa-de-gaze-75-cm-x-75-cm-13-fios-pacote-c-500-unidades-ultracotton-2501" target="_blank" rel="noopener">Welmed: gaze 7,5 x 7,5 com 500</a></li>
+      <li><a href="https://www.dentallight.com.br/produto/algodao-rolete-branco-com-100-unidades-wa-75312" target="_blank" rel="noopener">Dental Light: rolete de algodão</a></li>
+      <li><a href="https://www.dentallight.com.br/produto/sugador-descartavel-40-unidades-dochem-75113" target="_blank" rel="noopener">Dental Light: sugador descartável</a></li>
+      <li><a href="https://www.dentalshop.com.br/descartaveis/babador-descartavel" target="_blank" rel="noopener">Dental Shop: babador descartável</a></li>
+      <li><a href="https://www.valerycosmeticos.com.br/mascara-de-protecao-respiratoria-n95pff2-branca" target="_blank" rel="noopener">Valery: máscara N95/PFF2</a></li>
+      <li><a href="https://www.utilidadesclinicas.com.br/avental-tnt-descartavel-manga-longa-40g-medix.html" target="_blank" rel="noopener">Utilidades Clínicas: avental TNT 40 g</a></li>
+      <li><a href="https://loja.sprotection.com.br/produto/avental-descartavel-tnt-sms-manga-longa-hospitalar-40g-10-unidades" target="_blank" rel="noopener">SP Protection: avental SMS</a></li>
+      <li><a href="https://www.ferrazweb.com.br/odontologia/aventais" target="_blank" rel="noopener">Ferraz: touca sanfonada</a></li>
+      <li><a href="https://www.dentalcuritibana.com.br/loja/produto-182105-1859-papel_grau_cirurgico_rolo" target="_blank" rel="noopener">Dental Curitibana: papel grau cirúrgico</a></li>
+      <li><a href="https://www.lojainterdental.com.br/prevencao-e-profilaxia/fluor" target="_blank" rel="noopener">Loja Interdental: flúor gel</a></li>
+      <li><a href="https://loja.medplusonline.com.br/biosseguranca-e-limpeza/clorexidina-degermante-2-1lt-riohex" target="_blank" rel="noopener">Medplus: clorexidina 2% Riohex</a></li>
+      <li><a href="https://www.medshop.com.br/alcool-em-gel-medshop/p" target="_blank" rel="noopener">MedShop: álcool gel 70%</a></li>
+      <li><a href="https://lista.mercadolivre.com.br/saco-geladinho-6x24" target="_blank" rel="noopener">Mercado Livre: saco tipo geladinho 6x24</a></li>
+      <li><a href="https://www.dentalproclin.com.br/produto/cimento-resinoso-allcem-dual-corpo-duplo-fgm-validade-09-24-74065" target="_blank" rel="noopener">Dental Proclin: Allcem Dual</a></li>
+      <li><a href="https://www.dentaloralline.com.br/kota/sonda-exploradora-5" target="_blank" rel="noopener">Dental Oral Line: sonda exploradora nº 5</a></li>
+      <li><a href="https://www.dentalecia.com.br/sondamilimetradacarolinadonortecpunc-15millennium-golgran/p" target="_blank" rel="noopener">Dentalecia: sonda Carolina do Norte</a></li>
+    </ul>
+  </section>
+
+  <section class="secao" id="seguranca">
+    <header>
+      <div class="olho">Registros e segurança</div>
+      <h2>Como as mudanças foram feitas</h2>
+    </header>
+    <ul class="lista">
+      <li>Custos, gastos e preços de compra só aparecem para o administrador; o servidor os remove das respostas para os outros níveis, e o histórico registra alterações de custo sem o valor.</li>
+      <li>O banco foi atualizado por scripts que podem ser importados de novo, testados antes em cópias e aplicados com backup: <span class="mono">antes_planejamento</span>, <span class="mono">antes_planejamento_etapa2</span> e <span class="mono">antes_precos_mercado</span>, de 04/11/2026, em C:\wamp64.1\backups.</li>
+      <li>O script de preços só preenche produtos ainda sem custo: nunca sobrescreve um custo informado ou aprendido com compras.</li>
+      <li>Testes automáticos de ponta a ponta numa cópia do banco: custo médio ponderado, cotação com escolha do vencedor, recebimento com preço cotado, agenda das sete frequências, envio sem duplicar, nova tentativa após falha e custos ocultos para o estoquista.</li>
+      <li>A conexão segura com o Gmail foi testada até o aperto de mão TLS, com o certificado conferido; nenhuma mensagem foi enviada para fora.</li>
+    </ul>
+  </section>
+
+  <section class="secao" id="proximos">
+    <header>
+      <div class="olho">Próximos passos</div>
+      <h2>O que o consultório precisa fazer</h2>
+    </header>
+    <ol class="passos">
+      <li><p><b>Registrar todas as saídas</b> em Movimentar ou no Caixa. É delas que o sistema aprende o consumo; com 8 semanas de dados, a tendência passa a ser calculada.</p></li>
+      <li><p><b>Conferir os 35 custos estimados e os 2 sem custo</b> em Financeiro → Custos, com o preço que o consultório realmente paga.</p></li>
+      <li><p><b>Conferir as unidades dos itens de maior valor</b>, como Avental de TNT, Gaze, Filmes radiográficos e Rolete de algodão.</p></li>
+      <li><p><b>Cadastrar os fornecedores com e-mail</b> e configurar o servidor de e-mail em Financeiro → Envios automáticos. No Gmail: smtp.gmail.com, porta 587, TLS e uma senha de app.</p></li>
+      <li><p><b>Criar os envios programados</b>, por exemplo: aviso de estoque semanal, compras mensal e análise trimestral.</p></li>
+    </ol>
+  </section>
+
+  <footer>Auxiliar Odont · Projeto Integrador · Resumo gerado em 04/11/2026 a partir do sistema em funcionamento na rede local.</footer>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({ startOnLoad: true, theme: matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "default" });</script>
+</body>
+</html>
