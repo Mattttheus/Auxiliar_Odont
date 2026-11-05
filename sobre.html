@@ -79,6 +79,12 @@
                             <td>Servidor local (WAMP), login com sessão no servidor e níveis de acesso (administrador, cirurgião-dentista, estoquista, caixa e usuário comum) validados na API</td></tr>
                         <tr><td>Relatórios com análise de dados</td>
                             <td>Dashboard (movimentações, mais consumidos, situação por categoria) e exportação CSV</td></tr>
+                        <tr><td>Planejamento de compras de 30, 60 e 90 dias</td>
+                            <td><a href="planejamento.html">Planejamento 30/60/90</a>: previsão estatística aprendida com as saídas (Holt, Croston ou média), nível de serviço pela curva ABC, estoque de segurança, saúde do estoque e compras indicativas com data de pedido</td></tr>
+                        <tr><td>Análise financeira atual, anterior e futura</td>
+                            <td><a href="financeiro.html">Financeiro</a>: períodos semanais a semestrais, progresso do período atual, previsto × realizado, custo de referência pelo preço de mercado e média ponderada das compras</td></tr>
+                        <tr><td>Processo de compras com fornecedores</td>
+                            <td><a href="fornecedores.html">Fornecedores</a> com avaliação, <a href="cotacoes.html">Cotações</a> por e-mail com quadro de preços, listas por fornecedor e envios automáticos de compras, avisos de estoque e análise</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -110,7 +116,8 @@
         if (user) {
             renderShell("sobre.html", user);
             // Quem não pode abrir a tela vê só o nome dela, em vez de voltar ao Dashboard sem aviso.
-            const PERMISSAO = { "movimentar.html": "movimentar", "caixa.html": "saida", "historico.html": "historico", "etiquetas.html": "etiquetas", "compras.html": "compras" };
+            const PERMISSAO = { "movimentar.html": "movimentar", "caixa.html": "saida", "historico.html": "historico", "etiquetas.html": "etiquetas", "compras.html": "compras",
+                "planejamento.html": "compras", "fornecedores.html": "compras", "cotacoes.html": "financeiro", "financeiro.html": "financeiro" };
             document.querySelectorAll(".main-content a[href]").forEach(a => {
                 const acao = PERMISSAO[a.getAttribute("href")];
                 if (acao && !can(user, acao)) a.replaceWith(a.textContent);

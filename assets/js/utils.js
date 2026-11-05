@@ -37,6 +37,15 @@ export function formatMoneyBR(value) {
     return Number(value || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+export function formatNumBR(value, casas = 0) {
+    return Number(value || 0).toLocaleString("pt-BR", { minimumFractionDigits: casas, maximumFractionDigits: casas });
+}
+
+/** Valor em reais; null (custo desconhecido) vira "—", nunca R$ 0,00. */
+export function reais(value) {
+    return value === null || value === undefined ? "—" : `R$ ${formatMoneyBR(value)}`;
+}
+
 export function daysUntil(value) {
     if (!value) return Infinity;
     return (paraData(value).getTime() - new Date().setHours(0, 0, 0, 0)) / 86400000;

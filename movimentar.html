@@ -85,6 +85,14 @@
                                     <label class="form-label">Validade</label>
                                     <input type="date" class="form-control form-control-lg" id="movValidade">
                                 </div>
+                                <div class="col-sm-8 campo-entrada">
+                                    <label class="form-label" for="movFornecedor">Fornecedor</label>
+                                    <select class="form-select" id="movFornecedor"><option value="">Não informado</option></select>
+                                </div>
+                                <div class="col-sm-4 campo-entrada campo-custo d-none">
+                                    <label class="form-label" for="movCusto">Custo unitário (R$)</label>
+                                    <input type="number" class="form-control" id="movCusto" min="0" step="0.01" placeholder="Opcional">
+                                </div>
                                 <div class="col-12">
                                     <label class="form-label">Observação</label>
                                     <input class="form-control" id="movObs" placeholder="Ex.: uso no consultório 2">

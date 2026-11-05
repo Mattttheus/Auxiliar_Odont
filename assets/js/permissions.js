@@ -14,13 +14,14 @@ export const ROLES = {
 // Matriz de permissões: cada ação liberada por perfil.
 // compras: ver sugestões e listas de compra; compras_edit: salvar/receber listas;
 // etiquetas: gerar e imprimir etiquetas QR; config: critérios de alerta e reposição;
-// controle: painel do administrador (curva ABC e controle de acesso).
+// controle: painel do administrador (curva ABC e controle de acesso);
+// financeiro: custos, gastos, cotações, análise financeira e envios por e-mail.
 const PERMISSIONS = {
-    admin: { produtos_view: true, produtos_edit: true, entrada: true, saida: true, historico: true, usuarios: true, compras: true, compras_edit: true, etiquetas: true, config: true, controle: true },
-    estoquista: { produtos_view: true, produtos_edit: true, entrada: true, saida: true, historico: true, usuarios: false, compras: true, compras_edit: true, etiquetas: true, config: false, controle: false },
-    vendedor: { produtos_view: true, produtos_edit: false, entrada: false, saida: true, historico: true, usuarios: false, compras: false, compras_edit: false, etiquetas: false, config: false, controle: false },
-    dentista: { produtos_view: true, produtos_edit: false, entrada: false, saida: false, historico: true, usuarios: false, compras: true, compras_edit: false, etiquetas: false, config: false, controle: false },
-    comum: { produtos_view: true, produtos_edit: false, entrada: false, saida: false, historico: false, usuarios: false, compras: false, compras_edit: false, etiquetas: false, config: false, controle: false }
+    admin: { produtos_view: true, produtos_edit: true, entrada: true, saida: true, historico: true, usuarios: true, compras: true, compras_edit: true, etiquetas: true, config: true, controle: true, financeiro: true },
+    estoquista: { produtos_view: true, produtos_edit: true, entrada: true, saida: true, historico: true, usuarios: false, compras: true, compras_edit: true, etiquetas: true, config: false, controle: false, financeiro: false },
+    vendedor: { produtos_view: true, produtos_edit: false, entrada: false, saida: true, historico: true, usuarios: false, compras: false, compras_edit: false, etiquetas: false, config: false, controle: false, financeiro: false },
+    dentista: { produtos_view: true, produtos_edit: false, entrada: false, saida: false, historico: true, usuarios: false, compras: true, compras_edit: false, etiquetas: false, config: false, controle: false, financeiro: false },
+    comum: { produtos_view: true, produtos_edit: false, entrada: false, saida: false, historico: false, usuarios: false, compras: false, compras_edit: false, etiquetas: false, config: false, controle: false, financeiro: false }
 };
 
 // Descrição de cada permissão, na ordem exibida no controle de acesso.
@@ -35,7 +36,8 @@ export const PERMISSOES = [
     ["etiquetas", "Gerar etiquetas QR"],
     ["config", "Alterar critérios de alerta e reposição"],
     ["usuarios", "Gerenciar usuários"],
-    ["controle", "Curva ABC e controle de acesso"]
+    ["controle", "Curva ABC e controle de acesso"],
+    ["financeiro", "Custos, cotações, análise financeira e e-mails"]
 ];
 
 export function can(user, action) {

@@ -2,7 +2,7 @@
 // conferência e registra entrada (com lote/validade) ou saída no banco.
 import { requirePermission, can } from "./permissions.js";
 import { renderShell } from "./layout.js";
-import { listProdutos, getProduto, getProdutoByCodigoBarras, listLotes, registrarMovimentacao } from "./data.js";
+import { listProdutos, getProduto, getProdutoByCodigoBarras, listLotes, registrarMovimentacao, listFornecedores } from "./data.js";
 import { formatDateBR, escapeHtml, linkProduto } from "./utils.js";
 import { estoqueMinimo } from "./alertas.js";
 import { iniciarLeitorContinuo, DICA_LEITURA } from "./scanner.js";
@@ -54,12 +54,20 @@ async function init() {
     } catch (err) {
         mostrarStatus("Erro ao carregar produtos: " + err.message);
     }
+    // Fornecedor na entrada alimenta a avaliação de fornecedores; o custo, só o administrador informa.
+    if (can(user, "compras")) {
+        listFornecedores().then(lista => {
+            document.getElementById("movFornecedor").innerHTML = `<option value="">Não informado</option>`
+                + lista.filter(f => Number(f.ativo) === 1).map(f => `<option value="${f.id}">${escapeHtml(f.nome)}</option>`).join("");
+        }).catch(() => {});
+    }
     document.getElementById("codigoManual").focus();
 }
 
 function aplicarTipo() {
     const entrada = tipo === "entrada";
     document.querySelectorAll(".campo-entrada").forEach(el => el.classList.toggle("d-none", !entrada));
+    document.querySelectorAll(".campo-custo").forEach(el => el.classList.toggle("d-none", !entrada || !can(user, "financeiro")));
     const btn = document.getElementById("btnConfirmar");
     btn.className = `btn btn-lg flex-grow-1 ${entrada ? "btn-success" : "btn-danger"}`;
     btn.innerHTML = entrada
@@ -170,6 +178,7 @@ async function mostrarProduto(produto) {
     document.getElementById("movQtd").value = 1;
     document.getElementById("movLote").value = "";
     document.getElementById("movValidade").value = "";
+    document.getElementById("movCusto").value = "";
     document.getElementById("movObs").value = "";
     document.getElementById("movQtd").focus();
     document.getElementById("movQtd").select();
@@ -205,6 +214,8 @@ async function confirmar() {
             observacao: document.getElementById("movObs").value.trim() || (tipo === "entrada" ? "Entrada via QR" : "Saída via QR"),
             lote: tipo === "entrada" ? document.getElementById("movLote").value.trim() : null,
             validade: tipo === "entrada" ? document.getElementById("movValidade").value : null,
+            fornecedorId: tipo === "entrada" ? document.getElementById("movFornecedor").value : null,
+            custoUnitario: tipo === "entrada" && can(user, "financeiro") ? document.getElementById("movCusto").value : null,
             origem: "qr"
         });
         sessao.unshift({ hora: new Date(), tipo, nome: produtoAtual.nome, quantidade, estoque: novoEstoque });

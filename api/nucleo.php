@@ -10,7 +10,7 @@ const NIVEIS_SOLICITAVEIS = ['dentista', 'estoquista', 'vendedor', 'comum'];
 // Quem pode o quê. A regra vale aqui, no servidor; assets/js/permissions.js repete esta
 // mesma matriz só para decidir o que mostrar na tela, então as duas precisam ficar iguais.
 const PERMISSOES = [
-    'admin' => ['produtos_view', 'produtos_edit', 'entrada', 'saida', 'historico', 'usuarios', 'compras', 'compras_edit', 'etiquetas', 'config', 'controle'],
+    'admin' => ['produtos_view', 'produtos_edit', 'entrada', 'saida', 'historico', 'usuarios', 'compras', 'compras_edit', 'etiquetas', 'config', 'controle', 'financeiro'],
     'estoquista' => ['produtos_view', 'produtos_edit', 'entrada', 'saida', 'historico', 'compras', 'compras_edit', 'etiquetas'],
     'vendedor' => ['produtos_view', 'saida', 'historico'],
     'dentista' => ['produtos_view', 'historico', 'compras'],
@@ -131,6 +131,19 @@ function inteiro(array $dados, string $campo): int
     return (int) $valor;
 }
 
+/** Valor em reais: vazio é nulo; negativo ou texto é recusado. */
+function dinheiro_ou_nulo(array $dados, string $campo): ?float
+{
+    $valor = $dados[$campo] ?? null;
+    if ($valor === null || $valor === '') {
+        return null;
+    }
+    if (!is_numeric($valor) || $valor < 0 || $valor > 99999999) {
+        falhar("Informe um valor válido em $campo.");
+    }
+    return round((float) $valor, 4);
+}
+
 function data_ou_nula(array $dados, string $campo): ?string
 {
     $valor = texto($dados, $campo);
@@ -185,6 +198,15 @@ function exigir(string $permissao): void
     if ($permissao !== 'login' && !pode($usuario, $permissao)) {
         falhar('Seu nível de acesso não permite esta ação.', 403);
     }
+}
+
+/** Custos de compra são só do administrador: somem das respostas para os outros níveis. */
+function ocultar_custos(array $linhas, array $campos): array
+{
+    if (pode(usuario_atual(), 'financeiro')) {
+        return $linhas;
+    }
+    return array_map(fn($l) => array_diff_key($l, array_flip($campos)), $linhas);
 }
 
 function registrar_historico(array $usuario, ?int $produtoId, string $produtoNome, string $acao, string $descricao, ?int $quantidade, string $origem): void

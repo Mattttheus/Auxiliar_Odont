@@ -123,7 +123,7 @@ function acao_compras_sugerir(array $dados): array
 function acao_compras_listas(array $dados): array
 {
     $itens = [];
-    foreach (linhas('SELECT * FROM listas_compra_itens ORDER BY id') as $item) {
+    foreach (ocultar_custos(linhas('SELECT * FROM listas_compra_itens ORDER BY id'), ['preco_unitario']) as $item) {
         $itens[$item['lista_id']][] = $item;
     }
     return array_map(function ($lista) use ($itens) {
@@ -143,29 +143,37 @@ function acao_compras_criar(array $dados): array
     if (!is_array($itens) || !$itens) {
         falhar('Selecione ao menos um item.');
     }
-    return em_transacao(function () use ($dados, $titulo, $itens) {
-        $usuario = usuario_atual();
-        executar(
-            'INSERT INTO listas_compra (titulo, observacao, criado_por, criado_por_nome) VALUES (?, ?, ?, ?)',
-            [$titulo, texto_ou_nulo($dados, 'observacao'), (int) $usuario['id'], $usuario['nome']]
-        );
-        $id = db()->insert_id;
-        foreach ($itens as $item) {
-            $quantidade = inteiro($item, 'quantidade');
-            if ($quantidade <= 0) {
-                falhar('A quantidade de cada item deve ser maior que zero.');
-            }
-            $produto = linha('SELECT id, nome, unidade FROM produtos WHERE id = ?', [inteiro($item, 'produto_id')]);
-            if (!$produto) {
-                falhar('Produto não encontrado.', 404);
-            }
-            executar(
-                'INSERT INTO listas_compra_itens (lista_id, produto_id, produto_nome, unidade, quantidade_sugerida, quantidade, motivo) VALUES (?, ?, ?, ?, ?, ?, ?)',
-                [$id, (int) $produto['id'], $produto['nome'], $produto['unidade'], (int) ($item['quantidade_sugerida'] ?? 0), $quantidade, texto_ou_nulo($item, 'motivo')]
-            );
+    $fornecedor = fornecedor_ativo($dados);
+    return em_transacao(fn() => ['id' => criar_lista_compra($titulo, texto_ou_nulo($dados, 'observacao'), $itens, $fornecedor, null)]);
+}
+
+/**
+ * Grava a lista e seus itens. Precisa rodar dentro de em_transacao(). O preço do item só vem
+ * de uma cotação concluída; ele vira o custo da entrada quando a lista é recebida.
+ */
+function criar_lista_compra(string $titulo, ?string $observacao, array $itens, ?array $fornecedor, ?int $cotacaoId): int
+{
+    $usuario = usuario_atual();
+    executar(
+        'INSERT INTO listas_compra (titulo, observacao, fornecedor_id, fornecedor_nome, cotacao_id, criado_por, criado_por_nome) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [$titulo, $observacao, $fornecedor ? (int) $fornecedor['id'] : null, $fornecedor['nome'] ?? null, $cotacaoId, (int) $usuario['id'], $usuario['nome']]
+    );
+    $id = db()->insert_id;
+    foreach ($itens as $item) {
+        $quantidade = inteiro($item, 'quantidade');
+        if ($quantidade <= 0) {
+            falhar('A quantidade de cada item deve ser maior que zero.');
         }
-        return ['id' => $id];
-    });
+        $produto = linha('SELECT id, nome, unidade FROM produtos WHERE id = ?', [inteiro($item, 'produto_id')]);
+        if (!$produto) {
+            falhar('Produto não encontrado.', 404);
+        }
+        executar(
+            'INSERT INTO listas_compra_itens (lista_id, produto_id, produto_nome, unidade, quantidade_sugerida, quantidade, preco_unitario, motivo) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            [$id, (int) $produto['id'], $produto['nome'], $produto['unidade'], (int) ($item['quantidade_sugerida'] ?? 0), $quantidade, $cotacaoId ? ($item['preco_unitario'] ?? null) : null, texto_ou_nulo($item, 'motivo')]
+        );
+    }
+    return $id;
 }
 
 /** Trava a lista e confirma que ela ainda pode mudar: recebida e cancelada são definitivas. */
@@ -194,17 +202,66 @@ function acao_compras_status(array $dados): array
     });
 }
 
-/** Recebimento: dá entrada de todos os itens e marca a lista como recebida, tudo ou nada. */
+/**
+ * Recebimento: dá entrada de todos os itens e marca a lista como recebida, tudo ou nada.
+ * O custo de cada item é o que o administrador informar ({id do item: custo}) ou, sem isso,
+ * o preço da cotação que gerou a lista. Ele entra no custo médio, a base do gasto previsto.
+ * As entradas ficam com o fornecedor da lista, para a avaliação do fornecedor.
+ */
 function acao_compras_receber(array $dados): array
 {
-    return em_transacao(function () use ($dados) {
+    $precos = pode(usuario_atual(), 'financeiro') && is_array($dados['precos'] ?? null) ? $dados['precos'] : [];
+    return em_transacao(function () use ($dados, $precos) {
         $lista = lista_ativa(inteiro($dados, 'id'));
         $id = (int) $lista['id'];
-        $itens = linhas('SELECT produto_id, quantidade FROM listas_compra_itens WHERE lista_id = ? AND produto_id IS NOT NULL', [$id]);
+        $fornecedor = $lista['fornecedor_id'] ? ['id' => (int) $lista['fornecedor_id'], 'nome' => $lista['fornecedor_nome']] : null;
+        $itens = linhas('SELECT id, produto_id, quantidade, preco_unitario FROM listas_compra_itens WHERE lista_id = ? AND produto_id IS NOT NULL', [$id]);
         foreach ($itens as $item) {
-            registrar_movimentacao((int) $item['produto_id'], 'entrada', (int) $item['quantidade'], "Recebimento da lista de compras #$id", null, null, 'compra');
+            $informado = dinheiro_ou_nulo($precos, (string) $item['id']);
+            $custo = $informado ?? ($item['preco_unitario'] === null ? null : (float) $item['preco_unitario']);
+            if ($informado !== null) {
+                executar('UPDATE listas_compra_itens SET preco_unitario = ? WHERE id = ?', [$informado, (int) $item['id']]);
+            }
+            registrar_movimentacao((int) $item['produto_id'], 'entrada', (int) $item['quantidade'], "Recebimento da lista de compras #$id", null, null, 'compra', $custo, $fornecedor);
         }
         executar("UPDATE listas_compra SET status = 'recebida', recebida_em = NOW() WHERE id = ?", [$id]);
         return ['itens' => count($itens)];
+    });
+}
+
+/**
+ * Envia a lista ao fornecedor por e-mail, só com produtos e quantidades (sem preços), e marca
+ * o pedido como enviado. O fornecedor precisa ter e-mail no cadastro.
+ */
+function acao_compras_enviar_fornecedor(array $dados): array
+{
+    $id = inteiro($dados, 'id');
+    $lista = linha('SELECT * FROM listas_compra WHERE id = ?', [$id]);
+    if (!$lista) {
+        falhar('Lista de compras não encontrada.', 404);
+    }
+    if ($lista['status'] !== 'aberta' && $lista['status'] !== 'enviada') {
+        falhar("Esta lista já está {$lista['status']}.", 409);
+    }
+    $fornecedor = $lista['fornecedor_id'] ? linha('SELECT * FROM fornecedores WHERE id = ?', [(int) $lista['fornecedor_id']]) : null;
+    if (!$fornecedor || !$fornecedor['email']) {
+        falhar('Escolha um fornecedor com e-mail cadastrado para esta lista.');
+    }
+    $itens = linhas('SELECT produto_nome, unidade, quantidade FROM listas_compra_itens WHERE lista_id = ? ORDER BY produto_nome', [$id]);
+    $assunto = "Pedido de compra #$id — " . nome_remetente();
+    $html = email_pedido_fornecedor($lista, $fornecedor, $itens);
+    enviar_registrando([$fornecedor['email']], $assunto, $html, 'fornecedor', 'pedido', null);
+    executar("UPDATE listas_compra SET status = 'enviada' WHERE id = ? AND status = 'aberta'", [$id]);
+    return ['email' => $fornecedor['email']];
+}
+
+/** Vincula ou troca o fornecedor de uma lista que ainda não foi recebida. */
+function acao_compras_fornecedor(array $dados): array
+{
+    $fornecedor = fornecedor_ativo($dados);
+    return em_transacao(function () use ($dados, $fornecedor) {
+        $lista = lista_ativa(inteiro($dados, 'id'));
+        executar('UPDATE listas_compra SET fornecedor_id = ?, fornecedor_nome = ? WHERE id = ?', [$fornecedor ? (int) $fornecedor['id'] : null, $fornecedor['nome'] ?? null, (int) $lista['id']]);
+        return [];
     });
 }

@@ -8,8 +8,12 @@ const ORIGENS_MOVIMENTO = ['manual', 'qr', 'pdv'];
  * Registra uma entrada ou saída: trava a linha do produto, confere permissão e estoque,
  * atualiza os lotes e a validade mais próxima e grava o histórico. Evita saldo errado quando
  * duas pessoas movimentam o mesmo item. Precisa rodar dentro de em_transacao().
+ *
+ * Custo: a entrada com custo unitário recalcula o custo médio ponderado
+ * ((saldo × custo médio + quantidade × custo) / novo saldo); sem custo, a média não muda.
+ * A saída grava o custo médio do momento, para o consumo ter valor no histórico.
  */
-function registrar_movimentacao(int $produtoId, string $tipo, int $quantidade, string $observacao, ?string $lote, ?string $validade, string $origem): int
+function registrar_movimentacao(int $produtoId, string $tipo, int $quantidade, string $observacao, ?string $lote, ?string $validade, string $origem, ?float $custo = null, ?array $fornecedor = null): int
 {
     $usuario = usuario_atual();
     if ($tipo !== 'entrada' && $tipo !== 'saida') {
@@ -27,9 +31,15 @@ function registrar_movimentacao(int $produtoId, string $tipo, int $quantidade, s
     }
     $atual = (int) $produto['quantidade'];
     $idUsuario = (int) $usuario['id'];
+    $custoMedio = $produto['custo_medio'] === null ? null : (float) $produto['custo_medio'];
 
     if ($tipo === 'entrada') {
         $novo = $atual + $quantidade;
+        if ($custo !== null) {
+            $custoMedio = $custoMedio === null || $atual <= 0
+                ? $custo
+                : round(($atual * $custoMedio + $quantidade * $custo) / $novo, 4);
+        }
         $lote = $lote === null || trim($lote) === '' ? null : mb_substr(trim($lote), 0, 60);
         if ($lote !== null || $validade !== null) {
             $lote = $lote ?? 'S/L';
@@ -41,10 +51,11 @@ function registrar_movimentacao(int $produtoId, string $tipo, int $quantidade, s
             }
         }
         executar(
-            'INSERT INTO entradas_produtos (produto_id, produto_nome, quantidade, usuario_id, usuario_nome, observacao, lote, validade, origem) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            [$produtoId, $produto['nome'], $quantidade, $idUsuario, $usuario['nome'], $observacao, $lote, $validade, $origem]
+            'INSERT INTO entradas_produtos (produto_id, produto_nome, quantidade, custo_unitario, fornecedor_id, fornecedor_nome, usuario_id, usuario_nome, observacao, lote, validade, origem) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [$produtoId, $produto['nome'], $quantidade, $custo, $fornecedor ? (int) $fornecedor['id'] : null, $fornecedor['nome'] ?? null, $idUsuario, $usuario['nome'], $observacao, $lote, $validade, $origem]
         );
         $descricao = "Entrada de $quantidade unidade(s)"
+            . ($fornecedor ? " — {$fornecedor['nome']}" : '')
             . ($lote !== null ? " — lote $lote" : '')
             . ($validade !== null ? ' — validade ' . date('d/m/Y', strtotime($validade)) : '');
     } else {
@@ -68,8 +79,8 @@ function registrar_movimentacao(int $produtoId, string $tipo, int $quantidade, s
         }
         $lotesUsados = $usados ? implode(', ', $usados) : null;
         executar(
-            'INSERT INTO saidas_produtos (produto_id, produto_nome, quantidade, usuario_id, usuario_nome, observacao, lote, origem) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-            [$produtoId, $produto['nome'], $quantidade, $idUsuario, $usuario['nome'], $observacao, $lotesUsados, $origem]
+            'INSERT INTO saidas_produtos (produto_id, produto_nome, quantidade, custo_unitario, usuario_id, usuario_nome, observacao, lote, origem) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [$produtoId, $produto['nome'], $quantidade, $custoMedio, $idUsuario, $usuario['nome'], $observacao, $lotesUsados, $origem]
         );
         $descricao = "Saída de $quantidade unidade(s)" . ($lotesUsados ? " — lote(s) $lotesUsados" : '');
     }
@@ -79,7 +90,7 @@ function registrar_movimentacao(int $produtoId, string $tipo, int $quantidade, s
     $novaValidade = $temLotes
         ? linha('SELECT MIN(validade) v FROM lotes WHERE produto_id = ? AND quantidade > 0', [$produtoId])['v']
         : $produto['validade'];
-    executar('UPDATE produtos SET quantidade = ?, validade = ? WHERE id = ?', [$novo, $novaValidade, $produtoId]);
+    executar('UPDATE produtos SET quantidade = ?, validade = ?, custo_medio = ? WHERE id = ?', [$novo, $novaValidade, $custoMedio, $produtoId]);
 
     registrar_historico($usuario, $produtoId, $produto['nome'], $tipo === 'entrada' ? 'Entrada' : 'Saída', $descricao, $tipo === 'entrada' ? $quantidade : -$quantidade, $origem);
     return $novo;
@@ -88,6 +99,7 @@ function registrar_movimentacao(int $produtoId, string $tipo, int $quantidade, s
 function acao_movimentar(array $dados): array
 {
     $origem = in_array($dados['origem'] ?? '', ORIGENS_MOVIMENTO, true) ? $dados['origem'] : 'manual';
+    $fornecedor = ($dados['tipo'] ?? '') === 'entrada' ? fornecedor_ativo($dados) : null;
     $novo = em_transacao(fn() => registrar_movimentacao(
         inteiro($dados, 'produto_id'),
         (string) ($dados['tipo'] ?? ''),
@@ -95,7 +107,10 @@ function acao_movimentar(array $dados): array
         texto($dados, 'observacao'),
         texto_ou_nulo($dados, 'lote'),
         data_ou_nula($dados, 'validade'),
-        $origem
+        $origem,
+        // Só o administrador vê e informa custos; de outros níveis o campo é ignorado.
+        pode(usuario_atual(), 'financeiro') ? dinheiro_ou_nulo($dados, 'custo_unitario') : null,
+        $fornecedor
     ));
     return ['estoque' => $novo];
 }
@@ -150,7 +165,8 @@ function acao_saidas_consumo(array $dados): array
 
 function acao_saidas_listar(array $dados): array
 {
-    return array_map(fn($l) => datas_iso($l, ['data_saida']), linhas('SELECT * FROM saidas_produtos ORDER BY data_saida DESC, id DESC'));
+    $saidas = ocultar_custos(linhas('SELECT * FROM saidas_produtos ORDER BY data_saida DESC, id DESC'), ['custo_unitario', 'preco_unitario']);
+    return array_map(fn($l) => datas_iso($l, ['data_saida']), $saidas);
 }
 
 function acao_historico_listar(array $dados): array

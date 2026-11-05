@@ -13,8 +13,11 @@ export const deleteProduto = (id) => apiPost("produtos.excluir", { id });
 export const conferirSaldos = () => apiGet("produtos.conferencia");
 
 // ---------- ENTRADA / SAÍDA ----------
-/** Registra uma entrada ou saída numa transação e devolve o novo estoque. */
-export async function registrarMovimentacao({ produto, tipo, quantidade, observacao = "", lote = null, validade = null, origem = "manual" }) {
+/**
+ * Registra uma entrada ou saída numa transação e devolve o novo estoque. Na entrada, o
+ * fornecedor é opcional e o custo unitário só é aceito do administrador.
+ */
+export async function registrarMovimentacao({ produto, tipo, quantidade, observacao = "", lote = null, validade = null, origem = "manual", fornecedorId = null, custoUnitario = null }) {
     const { estoque } = await apiPost("movimentar", {
         produto_id: produto.id,
         tipo,
@@ -22,7 +25,9 @@ export async function registrarMovimentacao({ produto, tipo, quantidade, observa
         observacao,
         lote,
         validade: validade || null,
-        origem
+        origem,
+        fornecedor_id: fornecedorId || null,
+        custo_unitario: custoUnitario === "" ? null : custoUnitario
     });
     return estoque;
 }
@@ -65,12 +70,16 @@ export const updateConfiguracoes = (valores) => apiPost("configuracoes.atualizar
 export const sugerirListaCompras = () => apiGet("compras.sugerir");
 export const listListasCompra = () => apiGet("compras.listas");
 export const updateStatusListaCompra = (id, status) => apiPost("compras.status", { id, status });
-export const receberListaCompra = async (id) => (await apiPost("compras.receber", { id })).itens;
+/** precos: { id do item: custo unitário } — só o administrador informa. */
+export const receberListaCompra = async (id, precos = null) => (await apiPost("compras.receber", { id, precos })).itens;
+export const definirFornecedorLista = (id, fornecedorId) => apiPost("compras.fornecedor", { id, fornecedor_id: fornecedorId || null });
+export const enviarListaAoFornecedor = async (id) => (await apiPost("compras.enviar_fornecedor", { id })).email;
 
-export function createListaCompra({ titulo, observacao, itens }) {
+export function createListaCompra({ titulo, observacao, itens, fornecedorId = null }) {
     return apiPost("compras.criar", {
         titulo,
         observacao: observacao || null,
+        fornecedor_id: fornecedorId || null,
         itens: itens.map(i => ({
             produto_id: i.produto_id,
             quantidade: i.quantidade,
@@ -79,6 +88,40 @@ export function createListaCompra({ titulo, observacao, itens }) {
         }))
     });
 }
+
+// ---------- PLANEJAMENTO E FINANCEIRO ----------
+/** Previsão de consumo, compras programadas e demonstrativo de 30, 60 e 90 dias. */
+export const getPlanejamento = (base, ajuste = 0) => apiGet("planejamento.projecao", { base, ajuste });
+/** Realizado e previsto por período: semanal, mensal, bimestral, trimestral ou semestral. */
+export const getAnaliseFinanceira = (granularidade, base) => apiGet("financeiro.analise", { granularidade, base });
+/** itens: [{ produto_id, custo }] — custo vazio apaga. */
+export const salvarCustos = async (itens) => (await apiPost("produtos.custos", { itens })).alterados;
+
+// ---------- FORNECEDORES ----------
+export const listFornecedores = () => apiGet("fornecedores.listar");
+export const salvarFornecedor = (dados) => apiPost("fornecedores.salvar", dados);
+export const excluirFornecedor = (id) => apiPost("fornecedores.excluir", { id });
+
+// ---------- COTAÇÕES ----------
+export const listCotacoes = () => apiGet("cotacoes.listar");
+/** fornecedores vazio = todos os ativos com e-mail. */
+export const criarCotacao = (dados) => apiPost("cotacoes.criar", dados);
+export const reenviarCotacao = (id, fornecedorId = null) => apiPost("cotacoes.reenviar", { id, fornecedor_id: fornecedorId });
+export const salvarPrecosCotacao = (id, precos, prazos, escolhas) => apiPost("cotacoes.precos", { id, precos, prazos, escolhas });
+export const concluirCotacao = (id) => apiPost("cotacoes.concluir", { id });
+export const cancelarCotacao = (id) => apiPost("cotacoes.cancelar", { id });
+
+// ---------- E-MAILS ----------
+export const getConfigEnvios = () => apiGet("envios.config");
+export const getPreviaEnvio = (tipo, frequencia, incluirValores, cotarFornecedores) =>
+    apiGet("envios.previa", { tipo, frequencia, incluir_valores: incluirValores ? 1 : 0, cotar_fornecedores: cotarFornecedores ? 1 : 0 });
+export const salvarSmtp = (dados) => apiPost("envios.smtp_salvar", dados);
+export const testarEmail = (email) => apiPost("envios.testar", { email });
+export const salvarProgramacao = (dados) => apiPost("envios.programacao_salvar", dados);
+export const excluirProgramacao = (id) => apiPost("envios.programacao_excluir", { id });
+export const enviarProgramacaoAgora = (id) => apiPost("envios.enviar_agora", { id });
+/** Dispara os envios vencidos; chamado pelo menu em todas as telas. */
+export const verificarEnvios = () => apiPost("envios.verificar");
 
 // ---------- HISTÓRICO ----------
 export async function listHistorico() {

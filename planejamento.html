@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Planejamento 30/60/90 - Auxiliar Odont</title>
+    <link href="assets/vendor/bootstrap/bootstrap.min.css" rel="stylesheet">
+    <link href="assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
+    <link href="assets/css/custom.css" rel="stylesheet">
+</head>
+
+<body class="theme-light">
+    <div id="app-shell"></div>
+
+    <div class="main-content">
+        <div class="container-fluid py-4 print-area">
+
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                <div>
+                    <h2 class="page-title"><i class="bi bi-graph-up-arrow"></i> Planejamento 30/60/90</h2>
+                    <p class="text-muted mb-0">Previsão estatística do consumo, saúde do estoque e compras programadas, aprendidas com o histórico</p>
+                </div>
+                <div class="d-flex gap-2 flex-wrap no-print">
+                    <a class="btn btn-outline-primary" href="compras.html"><i class="bi bi-cart-check"></i> Lista de Compras</a>
+                    <a class="btn btn-outline-primary d-none" href="cotacoes.html" id="linkCotacoes"><i class="bi bi-envelope-paper"></i> Cotações</a>
+                    <button class="btn btn-secondary" id="btnCsv"><i class="bi bi-download"></i> CSV</button>
+                    <button class="btn btn-outline-dark" id="btnImprimir"><i class="bi bi-printer"></i> Imprimir</button>
+                </div>
+            </div>
+
+            <div class="d-flex align-items-end flex-wrap gap-3 mb-3 no-print">
+                <div>
+                    <label class="form-label mb-1" for="filtroBase">Base de aprendizado</label>
+                    <select class="form-select" id="filtroBase">
+                        <option value="90">Últimos 90 dias</option>
+                        <option value="180" selected>Últimos 180 dias</option>
+                        <option value="365">Últimos 12 meses</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label mb-1" for="filtroAjuste">Cenário de demanda</label>
+                    <div class="input-group">
+                        <input type="number" class="form-control" id="filtroAjuste" value="0" min="-50" max="200" step="5" style="width:90px">
+                        <span class="input-group-text">%</span>
+                    </div>
+                </div>
+                <button class="btn btn-primary" id="btnRecalcular"><i class="bi bi-arrow-clockwise"></i> Recalcular</button>
+                <small class="text-muted" id="resumoParametros"></small>
+            </div>
+
+            <div id="msgContainer"></div>
+            <div id="avisoAprendizado"></div>
+
+            <div class="row g-3 mb-4" id="indicadores"></div>
+
+            <ul class="nav nav-tabs mb-4 no-print" role="tablist">
+                <li class="nav-item" role="presentation"><button class="nav-link active" type="button" role="tab" data-bs-toggle="tab" data-bs-target="#demonstrativo"><i class="bi bi-table"></i> Demonstrativo</button></li>
+                <li class="nav-item" role="presentation"><button class="nav-link" type="button" role="tab" data-bs-toggle="tab" data-bs-target="#saude"><i class="bi bi-heart-pulse"></i> Saúde do estoque</button></li>
+                <li class="nav-item" role="presentation"><button class="nav-link" type="button" role="tab" data-bs-toggle="tab" data-bs-target="#compras"><i class="bi bi-calendar-check"></i> Compras indicativas</button></li>
+                <li class="nav-item" role="presentation"><button class="nav-link" type="button" role="tab" data-bs-toggle="tab" data-bs-target="#previsao"><i class="bi bi-activity"></i> Previsão por produto</button></li>
+                <li class="nav-item" role="presentation"><button class="nav-link" type="button" role="tab" data-bs-toggle="tab" data-bs-target="#metodo"><i class="bi bi-info-circle"></i> Como funciona</button></li>
+            </ul>
+
+            <div class="tab-content">
+
+                <div class="tab-pane fade show active" id="demonstrativo" role="tabpanel">
+                    <div class="table-container mb-4">
+                        <h5 class="mb-1"><i class="bi bi-table"></i> Demonstrativo atual e futuro</h5>
+                        <p class="text-muted small mb-3">Hoje e a projeção para 30, 60 e 90 dias. "Sem comprar" mostra o que acontece se nada for pedido; as compras programadas são o que mantém cada item no estoque de proteção.</p>
+                        <div class="table-responsive">
+                            <table class="table align-middle mb-0 tabela-numeros">
+                                <thead><tr><th></th><th>Hoje</th><th>Em 30 dias</th><th>Em 60 dias</th><th>Em 90 dias</th></tr></thead>
+                                <tbody id="demonstrativoBody"><tr><td colspan="5" class="text-center text-muted py-4">Calculando...</td></tr></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="card shadow border-0 rounded-4 p-4 d-none" id="cardCurvaCompras">
+                        <h5 class="mb-1"><i class="bi bi-bar-chart text-primary"></i> Curva de compras: realizado e previsto</h5>
+                        <small class="text-muted" id="subCurvaCompras"></small>
+                        <div class="chart-box" id="boxCurvaCompras"><canvas id="chartCompras" role="img" aria-label="Compras realizadas nos últimos 6 meses e previstas para as próximas janelas de 30 dias"></canvas></div>
+                        <p class="text-muted text-center py-4 mb-0 d-none" id="semCurvaCompras"></p>
+                        <div class="table-responsive mt-3"><table class="table table-sm mb-0 tabela-numeros" id="tabelaCurvaCompras"></table></div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="saude" role="tabpanel">
+                    <p class="text-muted small">Cada produto entra na primeira situação que se aplica, da mais grave para a mais leve. Clique em uma situação para ver os itens.</p>
+                    <div class="row g-3 mb-4" id="saudeCards"></div>
+                    <div class="row g-3 mb-4" id="saudeIndicadores"></div>
+                    <div class="table-container">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                            <h5 class="mb-0" id="saudeTitulo">Itens</h5>
+                            <button class="btn btn-sm btn-outline-secondary no-print" id="saudeTodos">Mostrar todos</button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead><tr><th>Produto</th><th>Situação</th><th>Estoque</th><th>Proteção</th><th>Consumo/semana</th><th>Cobertura</th><th>Validade</th><th>Motivo</th></tr></thead>
+                                <tbody id="saudeBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="compras" role="tabpanel">
+                    <p class="text-muted small">Compras indicativas: o que pedir em cada janela, e até quando, para o estoque não cair abaixo da proteção. Pedidos já em listas abertas entram no cálculo como chegando no prazo de entrega.</p>
+                    <div id="janelas"></div>
+                </div>
+
+                <div class="tab-pane fade" id="previsao" role="tabpanel">
+                    <div class="table-container">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                            <h5 class="mb-0"><i class="bi bi-activity"></i> Previsão por produto <span class="badge bg-primary" id="qtdPrevisao">0</span></h5>
+                            <div class="d-flex gap-2 flex-wrap no-print">
+                                <input class="form-control abc-filtro" id="filtroBusca" type="search" placeholder="Buscar produto" aria-label="Buscar produto">
+                                <select class="form-select abc-filtro" id="filtroClasse" aria-label="Filtrar por curva">
+                                    <option value="">Todas as curvas</option>
+                                    <option value="A">Curva A</option>
+                                    <option value="B">Curva B</option>
+                                    <option value="C">Curva C</option>
+                                </select>
+                                <select class="form-select abc-filtro" id="filtroSituacao" aria-label="Filtrar por situação">
+                                    <option value="">Todos os itens</option>
+                                    <option value="compra">Com compra em 90 dias</option>
+                                    <option value="consumo">Com consumo aprendido</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Produto</th><th>Curva</th><th>Método</th><th>Consumo/semana</th><th>Tendência</th>
+                                        <th>Estoque</th><th>Proteção</th><th>Ponto de pedido</th><th>Acaba em</th><th>Pedir até</th>
+                                        <th>Comprar 30 · 60 · 90</th><th class="col-custo d-none">Gasto 90 dias</th><th class="no-print"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="previsaoBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="metodo" role="tabpanel">
+                    <div class="card shadow border-0 rounded-4 p-4">
+                        <h5><i class="bi bi-cpu"></i> Como o sistema aprende e projeta</h5>
+                        <ol class="mb-0 lh-lg">
+                            <li><strong>Aprendizado:</strong> as saídas da base escolhida viram uma série semanal por produto. Com menos de 8 semanas ou de 3 semanas com consumo, a previsão é a média. Consumo intermitente (mais da metade das semanas sem saída) usa o método de Croston, que estima à parte o tamanho de cada consumo e o intervalo entre eles. Os demais usam a suavização exponencial de Holt, que aprende o nível e a tendência e amortece a tendência para não extrapolar.</li>
+                            <li><strong>Curva ABC e nível de serviço:</strong> A, B e C pelo consumo da base (por valor quando todos os itens consumidos têm custo). A curva define a chance de não faltar: A 98%, B 95%, C 90%.</li>
+                            <li><strong>Estoque de segurança</strong> = z do nível de serviço × desvio do erro semanal × √(prazo de entrega em semanas). A <strong>proteção</strong> é o maior valor entre o mínimo cadastrado e o estoque de segurança.</li>
+                            <li><strong>Projeção dia a dia:</strong> o consumo previsto sai primeiro do lote que vence antes; o que vence sem uso vira perda, e as listas abertas chegam no prazo de entrega.</li>
+                            <li><strong>Compras indicativas:</strong> em cada janela de 30 dias, compra-se o necessário para terminar a janela na proteção, cobrindo as faltas. O pedido sai um prazo de entrega antes de o estoque ficar abaixo da proteção.</li>
+                            <li><strong>Gasto previsto</strong> (administrador): quantidade × último custo de compra ou, sem compra com custo, o custo médio. Itens sem custo aparecem contados à parte, nunca como zero.</li>
+                            <li><strong>Cenário de demanda:</strong> multiplica o consumo aprendido (ex.: +20% para uma campanha) sem alterar o histórico.</li>
+                        </ol>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalProduto" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalProdutoTitulo"></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-4">
+                        <div class="col-lg-8">
+                            <h6 class="mb-0">Consumo semanal aprendido e previsto</h6>
+                            <small class="text-muted" id="modalProdutoSub"></small>
+                            <div class="chart-box"><canvas id="chartProduto" role="img" aria-label="Consumo semanal realizado, previsão e faixa provável"></canvas></div>
+                        </div>
+                        <div class="col-lg-4" id="modalProdutoDados"></div>
+                    </div>
+                    <div class="table-responsive mt-3" id="modalProdutoJanelas"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer><small>© <span id="year"></span> - Auxiliar Odont | Sistema de Controle de Estoque</small></footer>
+
+    <script src="assets/vendor/bootstrap/bootstrap.bundle.min.js"></script>
+    <script src="assets/vendor/chartjs/chart.umd.js"></script>
+    <script>document.getElementById("year").textContent = new Date().getFullYear();</script>
+    <script type="module" src="assets/js/planejamento.js"></script>
+</body>
+
+</html>

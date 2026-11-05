@@ -10,17 +10,50 @@ const PREFIXOS_CATEGORIA = [
 
 function acao_produtos_listar(array $dados): array
 {
-    return linhas('SELECT * FROM produtos ORDER BY nome');
+    return ocultar_custos(linhas('SELECT * FROM produtos ORDER BY nome'), ['custo_medio']);
 }
 
 function acao_produtos_obter(array $dados): ?array
 {
-    return linha('SELECT * FROM produtos WHERE id = ?', [inteiro($dados, 'id')]);
+    return ocultar_custos(linhas('SELECT * FROM produtos WHERE id = ?', [inteiro($dados, 'id')]), ['custo_medio'])[0] ?? null;
 }
 
 function acao_produtos_por_codigo(array $dados): ?array
 {
-    return linha('SELECT * FROM produtos WHERE codigo_barras = ?', [texto($dados, 'codigo')]);
+    return ocultar_custos(linhas('SELECT * FROM produtos WHERE codigo_barras = ?', [texto($dados, 'codigo')]), ['custo_medio'])[0] ?? null;
+}
+
+/**
+ * O administrador informa o custo de referência de vários produtos de uma vez (vazio apaga).
+ * As próximas entradas com custo recalculam a média ponderada a partir dele. O histórico,
+ * que outros níveis leem, registra a alteração sem o valor.
+ */
+function acao_produtos_custos(array $dados): array
+{
+    $itens = $dados['itens'] ?? null;
+    if (!is_array($itens) || !$itens) {
+        falhar('Nenhum custo para salvar.');
+    }
+    return em_transacao(function () use ($itens) {
+        $usuario = usuario_atual();
+        $alterados = 0;
+        foreach ($itens as $item) {
+            $id = inteiro($item, 'produto_id');
+            $custo = dinheiro_ou_nulo($item, 'custo');
+            $produto = linha('SELECT id, nome, custo_medio FROM produtos WHERE id = ? FOR UPDATE', [$id]);
+            if (!$produto) {
+                falhar('Produto não encontrado.', 404);
+            }
+            $antes = $produto['custo_medio'] === null ? null : round((float) $produto['custo_medio'], 4);
+            if ($antes === $custo) {
+                continue;
+            }
+            executar('UPDATE produtos SET custo_medio = ? WHERE id = ?', [$custo, $id]);
+            registrar_historico($usuario, $id, $produto['nome'], 'Edição', $custo === null ? 'Custo de referência removido' : 'Custo de referência atualizado', null, 'cadastro');
+            $alterados++;
+        }
+        return ['alterados' => $alterados];
+    });
 }
 
 function acao_lotes_listar(array $dados): array

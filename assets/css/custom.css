@@ -602,3 +602,97 @@ body.theme-dark .nav-tabs .nav-link.active {
         box-shadow: none !important;
     }
 }
+
+/* ===== PLANEJAMENTO, FINANCEIRO E COTAÇÕES ===== */
+
+body.carregando .tab-content,
+body.carregando #indicadores {
+    opacity: .55;
+    transition: opacity .2s;
+}
+
+.tabela-numeros td,
+.tabela-numeros th {
+    font-variant-numeric: tabular-nums;
+}
+
+.card-situacao {
+    border: 2px solid transparent !important;
+    background: #fff;
+    color: inherit;
+}
+
+.card-situacao.ativa {
+    border-color: #2563eb !important;
+}
+
+body.theme-dark .card-situacao {
+    background: #1e293b;
+}
+
+.melhor-preco {
+    background: rgba(22, 163, 74, .12) !important;
+}
+
+.melhor-preco input {
+    border-color: #16a34a;
+}
+
+.quadro-cotacao input {
+    min-width: 90px;
+}
+
+.previa-email {
+    width: 100%;
+    height: 70vh;
+    border: 1px solid rgba(0, 0, 0, .1);
+    border-radius: 10px;
+    background: #f4f6f9;
+}
+
+.progresso-periodo {
+    height: 8px;
+    border-radius: 4px;
+    background: #dbeafe;
+}
+
+.progresso-periodo > div {
+    height: 100%;
+    border-radius: 4px;
+    background: #256abf;
+}
+
+body.theme-dark .progresso-periodo {
+    background: #1e3a5f;
+}
+
+body.theme-dark .progresso-periodo > div {
+    background: #5598e7;
+}
+
+@media print {
+    .card-situacao {
+        border: 1px solid #cbd5e1 !important;
+    }
+}
+
+/* ===== PRÉVIA DE DEMONSTRAÇÃO (GitHub Pages) ===== */
+
+.faixa-previa {
+    margin: -6px 0 18px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    background: #efe9f8;
+    color: #3f2d6b;
+    font-size: 14px;
+}
+
+.faixa-previa a {
+    color: inherit;
+    font-weight: 600;
+}
+
+body.theme-dark .faixa-previa {
+    background: #2a2140;
+    color: #d9ccf5;
+}

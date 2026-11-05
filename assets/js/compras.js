@@ -1,12 +1,14 @@
 // Lista de compras: sugestão automática (rotina SQL sugerir_lista_compras), critérios
-// configuráveis, listas salvas no banco e recebimento que dá entrada no estoque.
+// configuráveis, listas salvas no banco com fornecedor, pedido por e-mail ao fornecedor e
+// recebimento que dá entrada no estoque (com o custo pago, quando o administrador informa).
 import { requirePermission, can } from "./permissions.js";
 import { renderShell } from "./layout.js";
 import {
     sugerirListaCompras, getConfiguracoes, updateConfiguracoes,
-    listListasCompra, createListaCompra, updateStatusListaCompra, receberListaCompra
+    listListasCompra, createListaCompra, updateStatusListaCompra, receberListaCompra,
+    listFornecedores, definirFornecedorLista, enviarListaAoFornecedor
 } from "./data.js";
-import { formatDateBR, formatDateTimeBR, downloadCsv, escapeHtml, linkProduto } from "./utils.js";
+import { formatDateBR, formatDateTimeBR, downloadCsv, escapeHtml, linkProduto, reais } from "./utils.js";
 
 const STATUS = {
     aberta: { label: "Aberta", badge: "bg-primary" },
@@ -17,6 +19,7 @@ const STATUS = {
 
 let sugestoes = [];
 let listas = [];
+let fornecedores = [];
 const desmarcados = new Set();
 
 const user = await requirePermission("compras");
@@ -40,9 +43,27 @@ async function init() {
         renderSugestoes();
     });
 
+    try {
+        fornecedores = await listFornecedores();
+    } catch {
+        fornecedores = [];
+    }
+    document.getElementById("fornecedorLista").innerHTML = opcoesFornecedor(null);
+
     await carregarCriterios();
     await carregarSugestoes();
     await carregarListas();
+}
+
+function opcoesFornecedor(selecionado) {
+    return `<option value="">Sem fornecedor</option>` + fornecedores
+        .filter(f => Number(f.ativo) === 1 || String(f.id) === String(selecionado))
+        .map(f => `<option value="${f.id}" ${String(f.id) === String(selecionado) ? "selected" : ""}>${escapeHtml(f.nome)}${f.email ? "" : " (sem e-mail)"}</option>`).join("");
+}
+
+// Declarada (e não const): init(), chamado com await no topo do módulo, já a usa.
+function fornecedorDe(lista) {
+    return fornecedores.find(f => String(f.id) === String(lista.fornecedor_id));
 }
 
 function mensagem(html, tipo = "warning") {
@@ -134,6 +155,7 @@ async function salvarLista() {
     try {
         await createListaCompra({
             titulo,
+            fornecedorId: document.getElementById("fornecedorLista").value || null,
             itens: itens.map(s => ({ ...s, quantidade: s.pedir }))
         });
         mensagem(`Lista "${escapeHtml(titulo)}" salva com ${itens.length} item(ns).`, "success");
@@ -148,7 +170,7 @@ async function carregarListas() {
     try {
         listas = await listListasCompra();
     } catch (err) {
-        tbody.innerHTML = `<tr><td colspan="7" class="text-center text-danger py-3">Erro: ${escapeHtml(err.message)}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center text-danger py-3">Erro: ${escapeHtml(err.message)}</td></tr>`;
         return;
     }
     const podeEditar = can(user, "compras_edit");
@@ -158,7 +180,8 @@ async function carregarListas() {
         return `
     <tr>
       <td>${l.id}</td>
-      <td>${escapeHtml(l.titulo)}</td>
+      <td>${escapeHtml(l.titulo)}${l.cotacao_id ? `<br><small class="text-muted">da cotação #${l.cotacao_id}</small>` : ""}</td>
+      <td>${l.fornecedor_nome ? escapeHtml(l.fornecedor_nome) : `<small class="text-muted">-</small>`}</td>
       <td>${escapeHtml(l.criado_por_nome || "-")}</td>
       <td>${formatDateTimeBR(l.criado_em)}</td>
       <td>${l.itens.length}</td>
@@ -166,31 +189,65 @@ async function carregarListas() {
       <td class="text-nowrap">
         <button class="btn btn-sm btn-outline-primary btn-ver" data-id="${l.id}" title="Ver itens"><i class="bi bi-eye"></i></button>
         <button class="btn btn-sm btn-outline-secondary btn-csv" data-id="${l.id}" title="CSV"><i class="bi bi-download"></i></button>
+        ${podeEditar && ativa && fornecedorDe(l)?.email ? `<button class="btn btn-sm btn-primary btn-email" data-id="${l.id}" title="Enviar o pedido por e-mail a ${escapeHtml(fornecedorDe(l).email)}"><i class="bi bi-envelope"></i></button>` : ""}
         ${podeEditar && l.status === "aberta" ? `<button class="btn btn-sm btn-warning btn-status" data-id="${l.id}" data-status="enviada" title="Marcar pedido como enviado"><i class="bi bi-send"></i></button>` : ""}
         ${podeEditar && ativa ? `<button class="btn btn-sm btn-success btn-receber" data-id="${l.id}" title="Receber: dá entrada no estoque"><i class="bi bi-box-arrow-in-down"></i></button>` : ""}
         ${podeEditar && ativa ? `<button class="btn btn-sm btn-outline-danger btn-status" data-id="${l.id}" data-status="cancelada" title="Cancelar"><i class="bi bi-x-lg"></i></button>` : ""}
       </td>
     </tr>`;
-    }).join("") || `<tr><td colspan="7" class="text-center text-muted py-3">Nenhuma lista salva ainda.</td></tr>`;
+    }).join("") || `<tr><td colspan="8" class="text-center text-muted py-3">Nenhuma lista salva ainda.</td></tr>`;
 
     const acharLista = (id) => listas.find(l => String(l.id) === String(id));
     tbody.querySelectorAll(".btn-ver").forEach(b => b.addEventListener("click", () => verLista(acharLista(b.dataset.id))));
     tbody.querySelectorAll(".btn-csv").forEach(b => b.addEventListener("click", () => exportarListaCsv(acharLista(b.dataset.id))));
     tbody.querySelectorAll(".btn-status").forEach(b => b.addEventListener("click", () => mudarStatus(acharLista(b.dataset.id), b.dataset.status)));
     tbody.querySelectorAll(".btn-receber").forEach(b => b.addEventListener("click", () => receber(acharLista(b.dataset.id))));
+    tbody.querySelectorAll(".btn-email").forEach(b => b.addEventListener("click", () => enviarEmail(acharLista(b.dataset.id), b)));
+}
+
+async function enviarEmail(lista, botao) {
+    const f = fornecedorDe(lista);
+    if (!confirm(`Enviar o pedido "${lista.titulo}" (${lista.itens.length} item(ns), sem preços) para ${f.nome} <${f.email}>?`)) return;
+    botao.disabled = true;
+    try {
+        const email = await enviarListaAoFornecedor(lista.id);
+        mensagem(`Pedido enviado para ${escapeHtml(email)} e marcado como enviado.`, "success");
+        await carregarListas();
+    } catch (err) {
+        mensagem("O envio falhou: " + escapeHtml(err.message), "danger");
+        botao.disabled = false;
+    }
 }
 
 function verLista(lista) {
+    const ativa = lista.status === "aberta" || lista.status === "enviada";
+    const comPreco = can(user, "financeiro");
     document.getElementById("modalListaTitulo").textContent = `#${lista.id} — ${lista.titulo}`;
     document.getElementById("modalListaBody").innerHTML = `
+    ${can(user, "compras_edit") && ativa ? `
+    <div class="d-flex gap-2 align-items-end mb-3">
+      <div><label class="form-label small mb-1" for="fornecedorModal">Fornecedor</label>
+      <select class="form-select form-select-sm" id="fornecedorModal">${opcoesFornecedor(lista.fornecedor_id)}</select></div>
+      <button class="btn btn-sm btn-outline-primary" id="btnFornecedorModal"><i class="bi bi-check2"></i> Salvar fornecedor</button>
+    </div>` : `<p class="small text-muted">Fornecedor: ${escapeHtml(lista.fornecedor_nome || "não informado")}</p>`}
     <table class="table table-sm">
-      <thead><tr><th>Produto</th><th>Unidade</th><th>Sugerido</th><th>Pedido</th><th>Motivo</th></tr></thead>
+      <thead><tr><th>Produto</th><th>Unidade</th><th>Sugerido</th><th>Pedido</th>${comPreco ? "<th>Preço</th>" : ""}<th>Motivo</th></tr></thead>
       <tbody>${lista.itens.map(i => `
         <tr><td>${i.produto_id ? linkProduto({ nome: i.produto_nome }) : escapeHtml(i.produto_nome)}</td><td>${escapeHtml(i.unidade || "-")}</td>
-        <td>${i.quantidade_sugerida}</td><td><strong>${i.quantidade}</strong></td><td><small>${escapeHtml(i.motivo || "")}</small></td></tr>`).join("")}
+        <td>${i.quantidade_sugerida}</td><td><strong>${i.quantidade}</strong></td>${comPreco ? `<td>${reais(i.preco_unitario === null ? null : Number(i.preco_unitario))}</td>` : ""}<td><small>${escapeHtml(i.motivo || "")}</small></td></tr>`).join("")}
       </tbody>
     </table>`;
-    new bootstrap.Modal(document.getElementById("modalLista")).show();
+    document.getElementById("modalListaRodape").classList.add("d-none");
+    document.getElementById("btnFornecedorModal")?.addEventListener("click", async () => {
+        try {
+            await definirFornecedorLista(lista.id, document.getElementById("fornecedorModal").value);
+            bootstrap.Modal.getInstance(document.getElementById("modalLista"))?.hide();
+            await carregarListas();
+        } catch (err) {
+            alert(err.message);
+        }
+    });
+    bootstrap.Modal.getOrCreateInstance(document.getElementById("modalLista")).show();
 }
 
 async function mudarStatus(lista, status) {
@@ -203,10 +260,40 @@ async function mudarStatus(lista, status) {
     }
 }
 
+/** O administrador informa o custo pago (vem preenchido com o preço da cotação); os demais só confirmam. */
 async function receber(lista) {
+    if (can(user, "financeiro")) return abrirRecebimento(lista);
     if (!confirm(`Receber a lista "${lista.titulo}"? Será registrada a entrada de ${lista.itens.length} item(ns) no estoque, com as quantidades pedidas.`)) return;
+    await concluirRecebimento(lista, null);
+}
+
+function abrirRecebimento(lista) {
+    document.getElementById("modalListaTitulo").textContent = `Receber #${lista.id} — ${lista.titulo}`;
+    document.getElementById("modalListaBody").innerHTML = `
+    <p class="small text-muted">Confira as quantidades e informe o custo unitário pago. Ele entra no custo médio do produto e é a base do gasto previsto. Em branco, a entrada fica sem custo${lista.cotacao_id ? " (os valores já vêm da cotação)" : ""}.</p>
+    <table class="table table-sm align-middle">
+      <thead><tr><th>Produto</th><th>Quantidade</th><th style="width:150px">Custo unitário (R$)</th></tr></thead>
+      <tbody>${lista.itens.filter(i => i.produto_id).map(i => `
+        <tr><td>${escapeHtml(i.produto_nome)}</td><td>${i.quantidade} ${escapeHtml(i.unidade || "")}</td>
+        <td><input type="number" class="form-control form-control-sm inp-custo-receber" min="0" step="0.01" data-item="${i.id}" value="${i.preco_unitario ?? ""}" aria-label="Custo de ${escapeHtml(i.produto_nome)}"></td></tr>`).join("")}
+      </tbody>
+    </table>`;
+    const rodape = document.getElementById("modalListaRodape");
+    rodape.classList.remove("d-none");
+    rodape.innerHTML = `<button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+      <button class="btn btn-success" id="btnConfirmarReceber"><i class="bi bi-box-arrow-in-down"></i> Dar entrada no estoque</button>`;
+    document.getElementById("btnConfirmarReceber").addEventListener("click", async () => {
+        const precos = {};
+        document.querySelectorAll(".inp-custo-receber").forEach(inp => { if (inp.value !== "") precos[inp.dataset.item] = Number(inp.value); });
+        bootstrap.Modal.getInstance(document.getElementById("modalLista"))?.hide();
+        await concluirRecebimento(lista, precos);
+    });
+    bootstrap.Modal.getOrCreateInstance(document.getElementById("modalLista")).show();
+}
+
+async function concluirRecebimento(lista, precos) {
     try {
-        const n = await receberListaCompra(lista.id);
+        const n = await receberListaCompra(lista.id, precos);
         mensagem(`Lista recebida: entrada registrada para ${n} item(ns). <a class="alert-link" href="historico.html">Ver no Histórico</a>. Para controlar a validade, informe o lote nas próximas entradas em <a class="alert-link" href="movimentar.html?tipo=entrada">Movimentar (QR)</a>.`, "success");
         await Promise.all([carregarListas(), carregarSugestoes()]);
     } catch (err) {

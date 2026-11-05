@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Financeiro - Auxiliar Odont</title>
+    <link href="assets/vendor/bootstrap/bootstrap.min.css" rel="stylesheet">
+    <link href="assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
+    <link href="assets/css/custom.css" rel="stylesheet">
+</head>
+
+<body class="theme-light">
+    <div id="app-shell"></div>
+
+    <div class="main-content">
+        <div class="container-fluid py-4 print-area">
+
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                <div>
+                    <h2 class="page-title"><i class="bi bi-cash-coin"></i> Financeiro</h2>
+                    <p class="text-muted mb-0">Análise financeira e preditiva por período, custos dos produtos e envios automáticos por e-mail</p>
+                </div>
+                <div class="d-flex gap-2 flex-wrap no-print">
+                    <a class="btn btn-outline-primary" href="planejamento.html"><i class="bi bi-graph-up-arrow"></i> Planejamento</a>
+                    <button class="btn btn-secondary" id="btnCsv"><i class="bi bi-download"></i> CSV</button>
+                    <button class="btn btn-outline-dark" id="btnImprimir"><i class="bi bi-printer"></i> Imprimir</button>
+                </div>
+            </div>
+
+            <div id="msgContainer"></div>
+
+            <ul class="nav nav-tabs mb-4 no-print" role="tablist">
+                <li class="nav-item" role="presentation"><button class="nav-link active" type="button" role="tab" data-bs-toggle="tab" data-bs-target="#analise"><i class="bi bi-bar-chart-line"></i> Análise por período</button></li>
+                <li class="nav-item" role="presentation"><button class="nav-link" type="button" role="tab" data-bs-toggle="tab" data-bs-target="#custos"><i class="bi bi-currency-dollar"></i> Custos</button></li>
+                <li class="nav-item" role="presentation"><button class="nav-link" type="button" role="tab" data-bs-toggle="tab" data-bs-target="#envios"><i class="bi bi-envelope-at"></i> Envios automáticos</button></li>
+            </ul>
+
+            <div class="tab-content">
+
+                <div class="tab-pane fade show active" id="analise" role="tabpanel">
+                    <div class="d-flex align-items-end flex-wrap gap-3 mb-3 no-print">
+                        <div>
+                            <label class="form-label mb-1" for="filtroGranularidade">Período</label>
+                            <select class="form-select" id="filtroGranularidade">
+                                <option value="semanal">Semanal</option>
+                                <option value="mensal" selected>Mensal</option>
+                                <option value="bimestral">Bimestral</option>
+                                <option value="trimestral">Trimestral</option>
+                                <option value="semestral">Semestral</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label mb-1" for="filtroBase">Base de aprendizado</label>
+                            <select class="form-select" id="filtroBase">
+                                <option value="90">Últimos 90 dias</option>
+                                <option value="180" selected>Últimos 180 dias</option>
+                                <option value="365">Últimos 12 meses</option>
+                            </select>
+                        </div>
+                        <small class="text-muted" id="resumoAnalise"></small>
+                    </div>
+
+                    <div id="avisoCustos"></div>
+                    <div class="row g-3 mb-4" id="indicadoresAnalise"></div>
+
+                    <div class="card shadow border-0 rounded-4 p-4 mb-4">
+                        <h5 class="mb-1"><i class="bi bi-bar-chart text-primary"></i> Compras e consumo por período</h5>
+                        <small class="text-muted">Barras: compras (realizadas e previstas). Linha: consumo valorizado pelo custo. Períodos à direita do atual são previsão.</small>
+                        <div class="chart-box" id="boxAnalise"><canvas id="chartAnalise" role="img" aria-label="Compras realizadas e previstas e consumo por período"></canvas></div>
+                        <p class="text-muted text-center py-4 mb-0 d-none" id="semAnalise">Sem valores para mostrar: informe os custos dos produtos na aba Custos.</p>
+                    </div>
+
+                    <div class="table-container">
+                        <h5 class="mb-1"><i class="bi bi-table"></i> Anteriores, atual e futuros</h5>
+                        <p class="text-muted small mb-3">No período atual, o realizado vai até hoje e a previsão completa o restante. No mensal, o previsto no início do mês é comparado com o realizado: é o hábito de avaliação que mostra o quanto confiar na previsão.</p>
+                        <div class="table-responsive">
+                            <table class="table align-middle mb-0 tabela-numeros">
+                                <thead>
+                                    <tr><th>Período</th><th>Situação</th><th>Compras</th><th>Variação</th><th>Consumo (un.)</th><th>Consumo (R$)</th><th>Estoque no fim</th><th>Previsto × realizado</th><th>Fornecedores</th></tr>
+                                </thead>
+                                <tbody id="analiseBody"><tr><td colspan="9" class="text-center text-muted py-4">Calculando...</td></tr></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="custos" role="tabpanel">
+                    <div class="table-container">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+                            <h5 class="mb-0"><i class="bi bi-currency-dollar"></i> Custo de referência dos produtos <span class="badge bg-primary" id="qtdCustos">0</span></h5>
+                            <div class="d-flex gap-2 flex-wrap no-print">
+                                <input class="form-control abc-filtro" id="buscaCusto" type="search" placeholder="Buscar produto" aria-label="Buscar produto">
+                                <div class="form-check form-switch align-self-center mb-0">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="soSemCusto">
+                                    <label class="form-check-label" for="soSemCusto">Só sem custo</label>
+                                </div>
+                                <button class="btn btn-success" id="btnSalvarCustos"><i class="bi bi-save"></i> Salvar custos</button>
+                            </div>
+                        </div>
+                        <p class="text-muted small">O custo informado aqui é o ponto de partida. Depois, cada entrada com custo (em Movimentar, no recebimento de uma lista ou pelo preço de uma cotação) recalcula a média ponderada. Para prever gastos, vale o último custo de compra.</p>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0 tabela-numeros">
+                                <thead><tr><th>Produto</th><th>Estoque</th><th>Custo médio</th><th>Último custo de compra</th><th style="width:160px">Novo custo médio (R$)</th><th>Valor em estoque</th></tr></thead>
+                                <tbody id="custosBody"><tr><td colspan="6" class="text-center text-muted py-4">Carregando...</td></tr></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="envios" role="tabpanel">
+                    <div class="row g-4">
+                        <div class="col-xl-5">
+                            <div class="card shadow border-0 rounded-4 p-4 h-100">
+                                <h5><i class="bi bi-hdd-network"></i> Servidor de e-mail (SMTP)</h5>
+                                <p class="text-muted small">Gmail: servidor smtp.gmail.com, porta 587, TLS; usuário é o endereço e a senha é uma <strong>senha de app</strong> (Conta Google → Segurança → Senhas de app). A senha fica só no banco deste computador e não volta para a tela.</p>
+                                <form id="formSmtp" class="row g-2">
+                                    <div class="col-8"><label class="form-label small" for="smtpHost">Servidor</label><input class="form-control" id="smtpHost" placeholder="smtp.gmail.com"></div>
+                                    <div class="col-4"><label class="form-label small" for="smtpPorta">Porta</label><input type="number" class="form-control" id="smtpPorta" value="587" min="1" max="65535"></div>
+                                    <div class="col-6"><label class="form-label small" for="smtpSeguranca">Segurança</label>
+                                        <select class="form-select" id="smtpSeguranca"><option value="tls">TLS (587)</option><option value="ssl">SSL (465)</option><option value="nenhuma">Nenhuma</option></select></div>
+                                    <div class="col-6"><label class="form-label small" for="smtpUsuario">Usuário</label><input class="form-control" id="smtpUsuario" autocomplete="off"></div>
+                                    <div class="col-12"><label class="form-label small" for="smtpSenha">Senha</label><input type="password" class="form-control" id="smtpSenha" autocomplete="new-password"></div>
+                                    <div class="col-6"><label class="form-label small" for="smtpRemetente">E-mail do remetente</label><input type="email" class="form-control" id="smtpRemetente"></div>
+                                    <div class="col-6"><label class="form-label small" for="smtpNome">Nome do remetente</label><input class="form-control" id="smtpNome" value="Auxiliar Odont"></div>
+                                    <div class="col-12 d-flex gap-2 mt-2"><button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Salvar</button><small class="text-muted align-self-center" id="statusSmtp"></small></div>
+                                </form>
+                                <hr>
+                                <label class="form-label small" for="emailTeste">Enviar um e-mail de teste para</label>
+                                <div class="input-group"><input type="email" class="form-control" id="emailTeste" placeholder="voce@exemplo.com"><button class="btn btn-outline-primary" id="btnTeste"><i class="bi bi-send"></i> Testar</button></div>
+                            </div>
+                        </div>
+                        <div class="col-xl-7">
+                            <div class="table-container h-100">
+                                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+                                    <h5 class="mb-0"><i class="bi bi-calendar-week"></i> Envios programados</h5>
+                                    <button class="btn btn-success btn-sm" id="btnNovoEnvio"><i class="bi bi-plus-lg"></i> Novo envio</button>
+                                </div>
+                                <p class="text-muted small">Saem sozinhos na primeira vez que alguém usar o sistema depois do horário. <strong>Compras a fazer</strong> lista os pedidos até o próximo envio e pode pedir cotação aos fornecedores; <strong>Aviso de estoque</strong> traz faltas, mínimos e validades; <strong>Análise</strong> compara o período anterior, o atual e o próximo.</p>
+                                <div class="table-responsive">
+                                    <table class="table align-middle mb-0">
+                                        <thead><tr><th>Envio</th><th>Quando</th><th>Para</th><th>Próximo</th><th>Último</th><th></th></tr></thead>
+                                        <tbody id="programacoesBody"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="table-container">
+                                <h5 class="mb-3"><i class="bi bi-journal-text"></i> Registro de envios</h5>
+                                <div class="table-responsive">
+                                    <table class="table table-sm align-middle mb-0">
+                                        <thead><tr><th>Data</th><th>Origem</th><th>Assunto</th><th>Para</th><th>Resultado</th></tr></thead>
+                                        <tbody id="registroBody"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalEnvio" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <form class="modal-content" id="formEnvio">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalEnvioTitulo">Novo envio programado</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body row g-3">
+                    <input type="hidden" id="envioId">
+                    <div class="col-md-6"><label class="form-label" for="envioTipo">Tipo</label>
+                        <select class="form-select" id="envioTipo"><option value="compras">Compras a fazer</option><option value="estoque">Aviso de estoque</option><option value="analise">Análise financeira e preditiva</option></select></div>
+                    <div class="col-md-6"><label class="form-label" for="envioFrequencia">Frequência</label>
+                        <select class="form-select" id="envioFrequencia">
+                            <option value="diaria">Diária</option><option value="semanal" selected>Semanal</option><option value="quinzenal">Quinzenal</option>
+                            <option value="mensal">Mensal</option><option value="bimestral">Bimestral</option><option value="trimestral">Trimestral</option><option value="semestral">Semestral</option>
+                        </select></div>
+                    <div class="col-md-4 campo-semana"><label class="form-label" for="envioDiaSemana">Dia da semana</label>
+                        <select class="form-select" id="envioDiaSemana"><option value="1">Segunda</option><option value="2">Terça</option><option value="3">Quarta</option><option value="4">Quinta</option><option value="5">Sexta</option><option value="6">Sábado</option><option value="7">Domingo</option></select></div>
+                    <div class="col-md-4 campo-mes"><label class="form-label" for="envioDiaMes">Dia do mês</label><input type="number" class="form-control" id="envioDiaMes" min="1" max="28" value="1"></div>
+                    <div class="col-md-4"><label class="form-label" for="envioHora">Hora</label><input type="number" class="form-control" id="envioHora" min="0" max="23" value="8"></div>
+                    <div class="col-12"><small class="text-muted" id="envioExplicacao"></small></div>
+                    <div class="col-12"><label class="form-label" for="envioDestinatarios">Destinatários</label><textarea class="form-control" id="envioDestinatarios" rows="2" placeholder="um@exemplo.com, outro@exemplo.com"></textarea></div>
+                    <div class="col-12 d-flex flex-wrap gap-4">
+                        <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="envioValores"><label class="form-check-label" for="envioValores">Incluir valores em reais</label></div>
+                        <div class="form-check form-switch campo-cotacao"><input class="form-check-input" type="checkbox" id="envioCotar"><label class="form-check-label" for="envioCotar">Pedir cotação aos fornecedores cadastrados</label></div>
+                        <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="envioAtivo" checked><label class="form-check-label" for="envioAtivo">Ativo</label></div>
+                    </div>
+                    <div class="col-12"><small class="text-muted">Com valores, os destinatários veem custos e gastos: inclua só quem pode ver. A cotação automática vai para todos os fornecedores ativos com e-mail, com os itens e quantidades, sem preços.</small></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary me-auto" id="btnPreviaModal"><i class="bi bi-eye"></i> Prévia</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalPrevia" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalPreviaTitulo">Prévia</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body"><iframe class="previa-email" id="previaFrame" title="Prévia do e-mail" sandbox></iframe></div>
+            </div>
+        </div>
+    </div>
+
+    <footer><small>© <span id="year"></span> - Auxiliar Odont | Sistema de Controle de Estoque</small></footer>
+
+    <script src="assets/vendor/bootstrap/bootstrap.bundle.min.js"></script>
+    <script src="assets/vendor/chartjs/chart.umd.js"></script>
+    <script>document.getElementById("year").textContent = new Date().getFullYear();</script>
+    <script type="module" src="assets/js/financeiro.js"></script>
+</body>
+
+</html>

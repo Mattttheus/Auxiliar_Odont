@@ -1,18 +1,23 @@
 // Sidebar, tema, comando de voz e beep sonoro (substitui includes/header.php e footer.php).
 import { logout } from "./auth.js";
 import { can, roleLabel, roleBadgeClass } from "./permissions.js";
-import { getConfiguracoes, contarCadastrosPendentes, listProdutos } from "./data.js";
+import { getConfiguracoes, contarCadastrosPendentes, listProdutos, verificarEnvios } from "./data.js";
 import { calcularAlertas } from "./alertas.js";
 import { escapeHtml } from "./utils.js";
+import { MODO_PREVIA } from "./api.js";
 
 const MENU_ITEMS = [
     { href: "dashboard.html", icon: "bi-house-door", label: "Dashboard", perm: null },
     { grupo: "Gestão de estoque", href: "produtos.html", icon: "bi-box", label: "Produtos", perm: "produtos_view" },
     { grupo: "Gestão de estoque", href: "movimentar.html", icon: "bi-qr-code-scan", label: "Movimentar (QR)", perm: "movimentar" },
     { grupo: "Gestão de estoque", href: "caixa.html", icon: "bi-cash-stack", label: "Caixa (PDV)", perm: "saida" },
-    { grupo: "Gestão de estoque", href: "compras.html", icon: "bi-cart-check", label: "Lista de Compras", perm: "compras" },
     { grupo: "Gestão de estoque", href: "etiquetas.html", icon: "bi-qr-code", label: "Etiquetas QR", perm: "etiquetas" },
     { grupo: "Gestão de estoque", href: "historico.html", icon: "bi-clock-history", label: "Histórico", perm: "historico" },
+    { grupo: "Compras e planejamento", href: "planejamento.html", icon: "bi-graph-up-arrow", label: "Planejamento 30/60/90", perm: "compras" },
+    { grupo: "Compras e planejamento", href: "compras.html", icon: "bi-cart-check", label: "Lista de Compras", perm: "compras" },
+    { grupo: "Compras e planejamento", href: "cotacoes.html", icon: "bi-envelope-paper", label: "Cotações", perm: "financeiro" },
+    { grupo: "Compras e planejamento", href: "fornecedores.html", icon: "bi-truck", label: "Fornecedores", perm: "compras" },
+    { grupo: "Administração", href: "financeiro.html", icon: "bi-cash-coin", label: "Financeiro", perm: "financeiro" },
     { grupo: "Administração", href: "controle.html", icon: "bi-shield-check", label: "Controle e Curva ABC", perm: "controle" },
     { grupo: "Administração", href: "usuarios.html", icon: "bi-people", label: "Usuários", perm: "usuarios" },
     { grupo: "Sistema", href: "sobre.html", icon: "bi-info-circle", label: "Sobre o projeto", perm: null }
@@ -66,6 +71,14 @@ export function renderShell(activePage, user) {
       <a href="#" id="logoutLink"><i class="bi bi-box-arrow-right"></i> Sair</a>
     </div>`;
 
+    if (MODO_PREVIA) {
+        document.querySelector(".main-content")?.insertAdjacentHTML("afterbegin", `
+        <div class="faixa-previa no-print" role="note">
+          <i class="bi bi-eye"></i> <strong>Prévia de demonstração</strong>: produtos e preços reais do catálogo, movimentações, fornecedores e cotações simulados.
+          Navegue à vontade; nada é gravado. <a href="documentacao/">Resumo do projeto com prints</a>
+        </div>`);
+    }
+
     document.getElementById("menuToggle")?.addEventListener("click", () => {
         document.getElementById("sidebarMenu").classList.toggle("show");
     });
@@ -77,7 +90,26 @@ export function renderShell(activePage, user) {
 
     setupTheme();
     setupVoice();
-    if (user) carregarAlertasSidebar(user);
+    if (user) {
+        carregarAlertasSidebar(user);
+        dispararEnviosVencidos();
+    }
+}
+
+/**
+ * Os e-mails programados saem na primeira visita depois do horário: não há tarefa agendada
+ * no Windows. Cada aba confere no máximo a cada 10 minutos, sem esperar a resposta.
+ */
+function dispararEnviosVencidos() {
+    const CHAVE = "auxiliarOdontEnvios";
+    try {
+        const ultima = Number(sessionStorage.getItem(CHAVE) || 0);
+        if (Date.now() - ultima < 10 * 60 * 1000) return;
+        sessionStorage.setItem(CHAVE, String(Date.now()));
+    } catch {
+        // Sem sessionStorage, confere a cada página; o servidor evita envio em dobro.
+    }
+    verificarEnvios().catch(err => console.warn("Envios automáticos indisponíveis", err));
 }
 
 /** Resumo de alertas (vencidos, vencendo, abaixo do mínimo) visível em todas as páginas. */
@@ -172,6 +204,10 @@ function handleVoiceCommand(text) {
     const ir = (href) => { window.location.href = href; };
     if (text.includes("curva") || text.includes("abc") || text.includes("controle")) return ir("controle.html");
     if (text.includes("senha")) return ir("nova-senha.html");
+    if (text.includes("planejamento") || text.includes("previsão") || text.includes("previsao") || text.includes("provisionamento") || text.includes("saúde") || text.includes("saude")) return ir("planejamento.html");
+    if (text.includes("financeiro") || text.includes("gasto") || text.includes("custo") || text.includes("análise") || text.includes("analise")) return ir("financeiro.html");
+    if (text.includes("cotação") || text.includes("cotacao") || text.includes("orçamento") || text.includes("orcamento")) return ir("cotacoes.html");
+    if (text.includes("fornecedor")) return ir("fornecedores.html");
     if (text.includes("dashboard") || text.includes("painel") || text.includes("início") || text.includes("inicio")) return ir("dashboard.html");
     if (text.includes("compra") || text.includes("repor") || text.includes("reposição") || text.includes("reposicao")) return ir("compras.html");
     if (text.includes("etiqueta")) return ir("etiquetas.html");

@@ -12,6 +12,11 @@ require __DIR__ . '/modulos/contas.php';
 require __DIR__ . '/modulos/produtos.php';
 require __DIR__ . '/modulos/movimentacoes.php';
 require __DIR__ . '/modulos/compras.php';
+require __DIR__ . '/modulos/planejamento.php';
+require __DIR__ . '/modulos/fornecedores.php';
+require __DIR__ . '/modulos/cotacoes.php';
+require __DIR__ . '/modulos/emails.php';
+require __DIR__ . '/modulos/financeiro.php';
 
 // ação => [método, permissão, função]. null é público; 'login' é qualquer usuário ativo.
 const ROTAS = [
@@ -35,6 +40,7 @@ const ROTAS = [
     'produtos.atualizar' => ['POST', 'produtos_edit', 'acao_produtos_atualizar'],
     'produtos.excluir' => ['POST', 'produtos_edit', 'acao_produtos_excluir'],
     'produtos.conferencia' => ['GET', 'controle', 'acao_produtos_conferencia'],
+    'produtos.custos' => ['POST', 'financeiro', 'acao_produtos_custos'],
     'lotes.listar' => ['GET', 'produtos_view', 'acao_lotes_listar'],
 
     // A permissão de entrada ou saída é conferida lá dentro, conforme o tipo.
@@ -52,6 +58,33 @@ const ROTAS = [
     'compras.criar' => ['POST', 'compras_edit', 'acao_compras_criar'],
     'compras.status' => ['POST', 'compras_edit', 'acao_compras_status'],
     'compras.receber' => ['POST', 'compras_edit', 'acao_compras_receber'],
+    'compras.fornecedor' => ['POST', 'compras_edit', 'acao_compras_fornecedor'],
+    'compras.enviar_fornecedor' => ['POST', 'compras_edit', 'acao_compras_enviar_fornecedor'],
+    // Quantidades para quem vê compras; custos e gastos só voltam para quem tem 'financeiro'.
+    'planejamento.projecao' => ['GET', 'compras', 'acao_planejamento_projecao'],
+
+    'fornecedores.listar' => ['GET', 'compras', 'acao_fornecedores_listar'],
+    'fornecedores.salvar' => ['POST', 'compras_edit', 'acao_fornecedores_salvar'],
+    'fornecedores.excluir' => ['POST', 'compras_edit', 'acao_fornecedores_excluir'],
+
+    // Cotação mostra preços de compra: só quem vê custos.
+    'cotacoes.listar' => ['GET', 'financeiro', 'acao_cotacoes_listar'],
+    'cotacoes.criar' => ['POST', 'financeiro', 'acao_cotacoes_criar'],
+    'cotacoes.reenviar' => ['POST', 'financeiro', 'acao_cotacoes_reenviar'],
+    'cotacoes.precos' => ['POST', 'financeiro', 'acao_cotacoes_precos'],
+    'cotacoes.concluir' => ['POST', 'financeiro', 'acao_cotacoes_concluir'],
+    'cotacoes.cancelar' => ['POST', 'financeiro', 'acao_cotacoes_cancelar'],
+
+    'financeiro.analise' => ['GET', 'financeiro', 'acao_financeiro_analise'],
+    'envios.config' => ['GET', 'financeiro', 'acao_envios_config'],
+    'envios.previa' => ['GET', 'financeiro', 'acao_envios_previa'],
+    'envios.smtp_salvar' => ['POST', 'financeiro', 'acao_envios_smtp_salvar'],
+    'envios.testar' => ['POST', 'financeiro', 'acao_envios_testar'],
+    'envios.programacao_salvar' => ['POST', 'financeiro', 'acao_envios_programacao_salvar'],
+    'envios.programacao_excluir' => ['POST', 'financeiro', 'acao_envios_programacao_excluir'],
+    'envios.enviar_agora' => ['POST', 'financeiro', 'acao_envios_enviar_agora'],
+    // Qualquer tela dispara os envios vencidos; a resposta não traz o conteúdo.
+    'envios.verificar' => ['POST', 'login', 'acao_envios_verificar'],
 ];
 
 function responder(array $corpo, int $status = 200): void

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Fornecedores - Auxiliar Odont</title>
+    <link href="assets/vendor/bootstrap/bootstrap.min.css" rel="stylesheet">
+    <link href="assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
+    <link href="assets/css/custom.css" rel="stylesheet">
+</head>
+
+<body class="theme-light">
+    <div id="app-shell"></div>
+
+    <div class="main-content">
+        <div class="container-fluid py-4 print-area">
+
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                <div>
+                    <h2 class="page-title"><i class="bi bi-truck"></i> Fornecedores</h2>
+                    <p class="text-muted mb-0">Cadastro e avaliação: prazo real de entrega, cotações respondidas e compras de cada fornecedor</p>
+                </div>
+                <div class="d-flex gap-2 flex-wrap no-print">
+                    <a class="btn btn-outline-primary d-none" href="cotacoes.html" id="linkCotacoes"><i class="bi bi-envelope-paper"></i> Cotações</a>
+                    <button class="btn btn-secondary" id="btnCsv"><i class="bi bi-download"></i> CSV</button>
+                    <button class="btn btn-success d-none" id="btnNovo"><i class="bi bi-plus-lg"></i> Novo fornecedor</button>
+                </div>
+            </div>
+
+            <div id="msgContainer"></div>
+            <div class="row g-3 mb-4" id="indicadores"></div>
+
+            <div class="table-container">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                    <h5 class="mb-0"><i class="bi bi-list-ul"></i> Fornecedores cadastrados <span class="badge bg-primary" id="qtdFornecedores">0</span></h5>
+                    <div class="d-flex gap-2 no-print">
+                        <input class="form-control abc-filtro" id="busca" type="search" placeholder="Buscar por nome, CNPJ ou e-mail" aria-label="Buscar fornecedor">
+                        <div class="form-check form-switch align-self-center mb-0">
+                            <input class="form-check-input" type="checkbox" role="switch" id="mostrarInativos">
+                            <label class="form-check-label" for="mostrarInativos">Mostrar inativos</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr><th>Fornecedor</th><th>Contato</th><th>Prazo informado</th><th>Prazo real</th><th>Listas</th><th>Cotações</th><th class="col-custo d-none">Comprado (12 meses)</th><th>Última compra</th><th class="no-print"></th></tr>
+                        </thead>
+                        <tbody id="fornecedoresBody"><tr><td colspan="9" class="text-center text-muted py-4">Carregando...</td></tr></tbody>
+                    </table>
+                </div>
+                <small class="text-muted d-block mt-2">Prazo real: média de dias entre criar a lista de compra e recebê-la. Cotações: respondidas (com preço registrado) sobre as recebidas por e-mail; itens ganhos entre parênteses.</small>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalFornecedor" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <form class="modal-content" id="formFornecedor">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalTitulo">Novo fornecedor</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body row g-3">
+                    <input type="hidden" id="fId">
+                    <div class="col-md-8"><label class="form-label" for="fNome">Nome / razão social *</label><input class="form-control" id="fNome" maxlength="150" required></div>
+                    <div class="col-md-4"><label class="form-label" for="fCnpj">CNPJ</label><input class="form-control" id="fCnpj" placeholder="00.000.000/0000-00" maxlength="18"></div>
+                    <div class="col-md-4"><label class="form-label" for="fContato">Contato</label><input class="form-control" id="fContato" maxlength="100"></div>
+                    <div class="col-md-4"><label class="form-label" for="fEmail">E-mail</label><input type="email" class="form-control" id="fEmail" maxlength="150"><small class="text-muted">Necessário para pedidos e cotações</small></div>
+                    <div class="col-md-4"><label class="form-label" for="fTelefone">Telefone</label><input class="form-control" id="fTelefone" placeholder="(11) 90000-0000" maxlength="15"></div>
+                    <div class="col-12"><label class="form-label" for="fEndereco">Endereço</label><input class="form-control" id="fEndereco" maxlength="200"></div>
+                    <div class="col-md-4"><label class="form-label" for="fPrazo">Prazo de entrega (dias)</label><input type="number" class="form-control" id="fPrazo" min="0" max="365"></div>
+                    <div class="col-md-8"><label class="form-label" for="fPagamento">Condição de pagamento</label><input class="form-control" id="fPagamento" maxlength="100" placeholder="Ex.: 30 dias no boleto"></div>
+                    <div class="col-12"><label class="form-label" for="fObs">Observação</label><textarea class="form-control" id="fObs" rows="2"></textarea></div>
+                    <div class="col-12"><div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="fAtivo" checked><label class="form-check-label" for="fAtivo">Ativo (recebe cotações automáticas)</label></div></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <footer><small>© <span id="year"></span> - Auxiliar Odont | Sistema de Controle de Estoque</small></footer>
+
+    <script src="assets/vendor/bootstrap/bootstrap.bundle.min.js"></script>
+    <script>document.getElementById("year").textContent = new Date().getFullYear();</script>
+    <script type="module" src="assets/js/fornecedores.js"></script>
+</body>
+
+</html>
